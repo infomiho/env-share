@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import fs from 'node:fs'
 import path from 'node:path'
-import { apiRequest, loadProjectConfig, unwrapProjectKey } from '../lib.js'
+import { apiRequest, loadProjectConfig, unwrapProjectKey, createSpinner } from '../lib.js'
 import { aesDecrypt } from '../crypto.js'
 
 export const pullCommand = new Command('pull')
@@ -12,6 +12,10 @@ export const pullCommand = new Command('pull')
     const projectKey = await unwrapProjectKey(projectId)
 
     const fileName = path.basename(file)
+
+    const spinner = createSpinner(`Pulling ${fileName}`)
+    spinner.start()
+
     const { encryptedContent } = await apiRequest<{ encryptedContent: string }>(
       'GET',
       `/api/projects/${projectId}/files/${fileName}`,
@@ -20,5 +24,5 @@ export const pullCommand = new Command('pull')
     const decrypted = aesDecrypt(encryptedContent, projectKey)
     fs.writeFileSync(path.resolve(file), decrypted)
 
-    console.log(`Pulled ${fileName}.`)
+    spinner.stop(`✓ Pulled ${fileName}.`)
   })

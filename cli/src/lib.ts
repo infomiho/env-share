@@ -93,6 +93,39 @@ export async function apiRequest<T>(
   return response.json() as Promise<T>
 }
 
+export function isCI(): boolean {
+  return !process.stdout.isTTY || !!process.env.CI
+}
+
+export function createSpinner(message: string): { start: () => void; stop: (finalMessage: string) => void } {
+  const ci = isCI()
+  const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+  let frameIndex = 0
+  let interval: NodeJS.Timeout | null = null
+
+  return {
+    start: () => {
+      if (ci) {
+        console.log(`${message}...`)
+        return
+      }
+      process.stdout.write(`${frames[0]} ${message}`)
+      interval = setInterval(() => {
+        frameIndex = (frameIndex + 1) % frames.length
+        process.stdout.write(`\r${frames[frameIndex]} ${message}`)
+      }, 80)
+    },
+    stop: (finalMessage: string) => {
+      if (interval) {
+        clearInterval(interval)
+        process.stdout.write(`\r\x1b[K${finalMessage}\n`)
+      } else if (ci) {
+        console.log(finalMessage)
+      }
+    },
+  }
+}
+
 export async function unwrapProjectKey(projectId: string): Promise<Buffer> {
   const config = loadConfig()
   const serverHost = getServerHost(config.serverUrl)

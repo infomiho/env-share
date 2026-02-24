@@ -1,5 +1,5 @@
 import { Command } from 'commander'
-import { apiRequest, loadProjectConfig, unwrapProjectKey } from '../lib.js'
+import { apiRequest, loadProjectConfig, unwrapProjectKey, createSpinner } from '../lib.js'
 import { eciesEncrypt } from '../crypto.js'
 
 interface Member {
@@ -21,12 +21,15 @@ const addCommand = new Command('add')
 
     const encryptedProjectKey = eciesEncrypt(projectKey, Buffer.from(publicKey, 'base64'))
 
+    const spinner = createSpinner(`Adding ${username}`)
+    spinner.start()
+
     await apiRequest('POST', `/api/projects/${projectId}/members`, {
       username,
       encryptedProjectKey,
     })
 
-    console.log(`Added ${username} to the project.`)
+    spinner.stop(`✓ Added ${username} to the project.`)
   })
 
 const removeCommand = new Command('remove')
@@ -34,8 +37,13 @@ const removeCommand = new Command('remove')
   .argument('<username>', 'GitHub username to remove')
   .action(async (username: string) => {
     const { projectId } = loadProjectConfig()
+
+    const spinner = createSpinner(`Removing ${username}`)
+    spinner.start()
+
     await apiRequest('DELETE', `/api/projects/${projectId}/members/${username}`)
-    console.log(`Removed ${username} from the project.`)
+
+    spinner.stop(`✓ Removed ${username} from the project.`)
   })
 
 const listCommand = new Command('list')
@@ -48,6 +56,7 @@ const listCommand = new Command('list')
       const name = member.github_name ? ` (${member.github_name})` : ''
       console.log(`${member.github_login}${name}`)
     }
+    console.log(`\n${members.length} member${members.length === 1 ? '' : 's'}`)
   })
 
 export const membersCommand = new Command('members')

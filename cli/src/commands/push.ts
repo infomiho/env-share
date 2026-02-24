@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import fs from 'node:fs'
 import path from 'node:path'
-import { apiRequest, loadProjectConfig, unwrapProjectKey } from '../lib.js'
+import { apiRequest, loadProjectConfig, unwrapProjectKey, createSpinner } from '../lib.js'
 import { aesEncrypt } from '../crypto.js'
 
 export const pushCommand = new Command('push')
@@ -20,9 +20,12 @@ export const pushCommand = new Command('push')
     const encryptedContent = aesEncrypt(content, projectKey)
     const fileName = path.basename(file)
 
+    const spinner = createSpinner(`Pushing ${fileName}`)
+    spinner.start()
+
     await apiRequest('PUT', `/api/projects/${projectId}/files/${fileName}`, {
       encryptedContent,
     })
 
-    console.log(`Pushed ${fileName}.`)
+    spinner.stop(`✓ Pushed ${fileName}.`)
   })

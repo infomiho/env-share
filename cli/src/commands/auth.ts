@@ -1,6 +1,6 @@
 import { Command } from 'commander'
 import fs from 'node:fs'
-import { saveConfig, clearConfig, getServerHost, apiRequest, type UserInfo } from '../lib.js'
+import { saveConfig, clearConfig, getServerHost, apiRequest, createSpinner, type UserInfo } from '../lib.js'
 import { generateKeyPair, savePrivateKey, getPrivateKeyPath } from '../crypto.js'
 
 interface DeviceFlowResponse {
@@ -36,7 +36,9 @@ export const loginCommand = new Command('login')
 
     console.log(`\nOpen this URL in your browser: ${verification_uri}`)
     console.log(`Enter code: ${user_code}\n`)
-    console.log('Waiting for authorization...')
+
+    const pollSpinner = createSpinner('Waiting for authorization')
+    pollSpinner.start()
 
     let token: string | null = null
     while (!token) {
@@ -54,11 +56,15 @@ export const loginCommand = new Command('login')
       }
     }
 
+    pollSpinner.stop('✓ Logged in successfully.')
     saveConfig({ serverUrl, token })
 
     if (!fs.existsSync(getPrivateKeyPath(serverHost))) {
       const { privateKey, publicKey } = generateKeyPair()
       savePrivateKey(serverHost, privateKey)
+
+      const keypairSpinner = createSpinner('Uploading encryption keypair')
+      keypairSpinner.start()
 
       await fetch(`${serverUrl}/api/auth/public-key`, {
         method: 'PUT',
@@ -69,10 +75,8 @@ export const loginCommand = new Command('login')
         body: JSON.stringify({ publicKey: publicKey.toString('base64') }),
       })
 
-      console.log('Generated and uploaded encryption keypair.')
+      keypairSpinner.stop('✓ Encryption keypair uploaded.')
     }
-
-    console.log('Logged in successfully.')
   })
 
 export const logoutCommand = new Command('logout')
