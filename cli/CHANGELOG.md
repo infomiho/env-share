@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/infomiho/env-share/compare/env-share-v0.4.0...env-share-v0.4.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* always upload public key on login and handle CLI errors gracefully ([156e36e](https://github.com/infomiho/env-share/commit/156e36e7e61059ea014f4f4f613daf8f7c1f2e3d))
+
 ## [0.4.0](https://github.com/infomiho/env-share/compare/env-share-v0.3.0...env-share-v0.4.0) (2026-02-24)
 
 
