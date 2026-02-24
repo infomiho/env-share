@@ -20,4 +20,7 @@ program.addCommand(pullCommand)
 program.addCommand(membersCommand)
 program.addCommand(filesCommand)
 
-program.parse()
+program.parseAsync().catch((error) => {
+  console.error(error.message)
+  process.exitCode = 1
+})

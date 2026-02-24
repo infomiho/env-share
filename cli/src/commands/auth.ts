@@ -1,7 +1,6 @@
 import { Command } from 'commander'
-import fs from 'node:fs'
 import { saveConfig, clearConfig, getServerHost, apiRequest, createSpinner, type UserInfo } from '../lib.js'
-import { generateKeyPair, savePrivateKey, getPrivateKeyPath } from '../crypto.js'
+import { getOrCreatePublicKey } from '../crypto.js'
 
 interface DeviceFlowResponse {
   device_code: string
@@ -59,24 +58,21 @@ export const loginCommand = new Command('login')
     pollSpinner.stop('✓ Logged in successfully.')
     saveConfig({ serverUrl, token })
 
-    if (!fs.existsSync(getPrivateKeyPath(serverHost))) {
-      const { privateKey, publicKey } = generateKeyPair()
-      savePrivateKey(serverHost, privateKey)
+    const publicKey = getOrCreatePublicKey(serverHost)
 
-      const keypairSpinner = createSpinner('Uploading encryption keypair')
-      keypairSpinner.start()
+    const keypairSpinner = createSpinner('Uploading public key')
+    keypairSpinner.start()
 
-      await fetch(`${serverUrl}/api/auth/public-key`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ publicKey: publicKey.toString('base64') }),
-      })
+    await fetch(`${serverUrl}/api/auth/public-key`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ publicKey: publicKey.toString('base64') }),
+    })
 
-      keypairSpinner.stop('✓ Encryption keypair uploaded.')
-    }
+    keypairSpinner.stop('✓ Public key uploaded.')
   })
 
 export const logoutCommand = new Command('logout')

@@ -101,6 +101,21 @@ export function loadPrivateKey(serverHost: string): Buffer {
   return Buffer.from(fs.readFileSync(keyPath, 'utf-8').trim(), 'base64')
 }
 
+export function derivePublicKey(privateKeyRaw: Buffer): Buffer {
+  const publicKeyDer = crypto.createPublicKey(toX25519PrivateKeyObject(privateKeyRaw))
+    .export({ type: 'spki', format: 'der' }) as Buffer
+  return publicKeyDer.subarray(-RAW_KEY_LENGTH)
+}
+
+export function getOrCreatePublicKey(serverHost: string): Buffer {
+  if (fs.existsSync(getPrivateKeyPath(serverHost))) {
+    return derivePublicKey(loadPrivateKey(serverHost))
+  }
+  const keypair = generateKeyPair()
+  savePrivateKey(serverHost, keypair.privateKey)
+  return keypair.publicKey
+}
+
 export function generateProjectKey(): Buffer {
   return crypto.randomBytes(RAW_KEY_LENGTH)
 }
