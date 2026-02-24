@@ -45,8 +45,7 @@ export async function migrate() {
       project_id text REFERENCES projects(id),
       name text NOT NULL,
       encrypted_content text NOT NULL,
-      updated_at timestamptz DEFAULT now(),
-      UNIQUE(project_id, name)
+      created_at timestamptz DEFAULT now()
     )
   `;
 }

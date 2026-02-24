@@ -15,6 +15,11 @@ npx @infomiho/env-share init
 npx @infomiho/env-share push
 npx @infomiho/env-share pull
 
+# Manage files
+npx @infomiho/env-share files list
+npx @infomiho/env-share files history .env
+npx @infomiho/env-share files delete .env.old
+
 # Manage team members
 npx @infomiho/env-share members add octocat
 npx @infomiho/env-share members remove octocat

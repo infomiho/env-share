@@ -4,6 +4,7 @@ import { initCommand } from './commands/init.js'
 import { pushCommand } from './commands/push.js'
 import { pullCommand } from './commands/pull.js'
 import { membersCommand } from './commands/members.js'
+import { filesCommand } from './commands/files.js'
 
 const program = new Command()
   .name('env-share')
@@ -17,5 +18,6 @@ program.addCommand(initCommand)
 program.addCommand(pushCommand)
 program.addCommand(pullCommand)
 program.addCommand(membersCommand)
+program.addCommand(filesCommand)
 
 program.parse()
