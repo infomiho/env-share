@@ -1,0 +1,27 @@
+services:
+  server:
+    build: ./server
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - DATABASE_URL=postgres://env_share:${DB_PASSWORD}@db:5432/env_share
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:18-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=env_share
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=env_share
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U env_share"]
+      interval: 2s
+      timeout: 5s
+      retries: 5
+volumes:
+  pgdata:

@@ -1,0 +1,21 @@
+{
+  "name": "env-share-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch dist/index.mjs",
+    "build": "tsdown"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1",
+    "@hono/valibot-validator": "^0.6.1",
+    "hono": "^4",
+    "postgres": "^3",
+    "valibot": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsdown": "^0",
+    "typescript": "^5"
+  }
+}

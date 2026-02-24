@@ -1,0 +1,22 @@
+{
+  "name": "@infomiho/env-share",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "env-share": "./dist/cli.mjs"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^13"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "tsdown": "^0",
+    "@types/node": "^22"
+  }
+}

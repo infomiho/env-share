@@ -1,0 +1,28 @@
+import { Command } from 'commander'
+import fs from 'node:fs'
+import path from 'node:path'
+import { apiRequest, loadProjectConfig, unwrapProjectKey } from '../lib.js'
+import { aesEncrypt } from '../crypto.js'
+
+export const pushCommand = new Command('push')
+  .description('Encrypt and upload an env file')
+  .argument('[file]', 'File to push', '.env')
+  .action(async (file: string) => {
+    const { projectId } = loadProjectConfig()
+
+    const filePath = path.resolve(file)
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`)
+    }
+
+    const content = fs.readFileSync(filePath)
+    const projectKey = await unwrapProjectKey(projectId)
+    const encryptedContent = aesEncrypt(content, projectKey)
+    const fileName = path.basename(file)
+
+    await apiRequest('PUT', `/api/projects/${projectId}/files/${fileName}`, {
+      encryptedContent,
+    })
+
+    console.log(`Pushed ${fileName}.`)
+  })
