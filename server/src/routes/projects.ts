@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { vValidator } from "@hono/valibot-validator";
 import crypto from "node:crypto";
-import { sql } from "../db.js";
+import { sql, findUserByLogin } from "../db.js";
 import {
   type AppEnv,
   authMiddleware,
@@ -9,11 +9,6 @@ import {
   requireOwner,
 } from "../middleware.js";
 import { CreateProjectSchema, AddMemberSchema } from "../schemas.js";
-
-async function findUserByLogin(username: string) {
-  const [user] = await sql`SELECT id, public_key FROM users WHERE github_login = ${username}`;
-  return user ?? null;
-}
 
 const projects = new Hono<AppEnv>();
 

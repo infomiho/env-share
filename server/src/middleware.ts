@@ -21,6 +21,25 @@ export function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+export async function findSessionUser(tokenHash: string): Promise<User | null> {
+  const [session] = await sql`
+    SELECT u.id, u.github_id, u.github_login, u.github_name, u.public_key
+    FROM sessions s
+    JOIN users u ON u.id = s.user_id
+    WHERE s.token_hash = ${tokenHash} AND s.expires_at > now()
+  `;
+
+  if (!session) return null;
+
+  return {
+    id: session.id,
+    github_id: session.github_id,
+    github_login: session.github_login,
+    github_name: session.github_name,
+    public_key: session.public_key,
+  };
+}
+
 export async function authMiddleware(c: Context<AppEnv>, next: Next) {
   const header = c.req.header("Authorization");
   if (!header?.startsWith("Bearer ")) {
@@ -29,25 +48,13 @@ export async function authMiddleware(c: Context<AppEnv>, next: Next) {
 
   const token = header.slice(7);
   const tokenHash = hashToken(token);
+  const user = await findSessionUser(tokenHash);
 
-  const [session] = await sql`
-    SELECT u.id, u.github_id, u.github_login, u.github_name, u.public_key
-    FROM sessions s
-    JOIN users u ON u.id = s.user_id
-    WHERE s.token_hash = ${tokenHash} AND s.expires_at > now()
-  `;
-
-  if (!session) {
+  if (!user) {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  c.set("user", {
-    id: session.id,
-    github_id: session.github_id,
-    github_login: session.github_login,
-    github_name: session.github_name,
-    public_key: session.public_key,
-  });
+  c.set("user", user);
   c.set("tokenHash", tokenHash);
 
   await next();

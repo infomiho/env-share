@@ -4,12 +4,21 @@ import { migrate } from "./db.js";
 import { auth } from "./routes/auth.js";
 import { projects } from "./routes/projects.js";
 import { files } from "./routes/files.js";
+import { webAuth } from "./web/auth.js";
+import { dashboard } from "./web/dashboard.js";
+import { project } from "./web/project.js";
 
 const app = new Hono();
 
 app.route("/", auth);
 app.route("/", projects);
 app.route("/", files);
+
+app.route("/web", webAuth);
+app.route("/web", dashboard);
+app.route("/web/projects", project);
+
+app.get("/", (c) => c.redirect("/web"));
 
 app.get("/api/health", (c) => c.json({ ok: true }));
 
