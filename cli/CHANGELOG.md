@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/infomiho/env-share/compare/env-share-v0.3.0...env-share-v0.4.0) (2026-02-24)
+
+
+### Features
+
+* add file versioning, history, delete, and update docs ([f374fd5](https://github.com/infomiho/env-share/commit/f374fd56176b2e2803d0f52af6b6837e75f7998d))
+
 ## [0.3.0](https://github.com/infomiho/env-share/compare/env-share-v0.2.0...env-share-v0.3.0) (2026-02-24)
 
 
