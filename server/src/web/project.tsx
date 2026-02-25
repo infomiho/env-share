@@ -1,11 +1,19 @@
 import { Hono } from "hono";
+import { vValidator } from "@hono/valibot-validator";
+import * as v from "valibot";
 import { sql } from "../db.js";
-import { findUserByLogin } from "../repositories.js";
+import { findUserByLogin, upsertMember } from "../repositories.js";
+import { fetchGitHubUserByLogin, upsertUser } from "../github.js";
 import type { AppEnv } from "../middleware.js";
 import { Layout } from "./layout.js";
 import { Terminal } from "./components.js";
 import { webAuthMiddleware } from "./middleware.js";
 import { formatDate } from "./format.js";
+import { setFlash, setFlashError, consumeFlash } from "./flash.js";
+
+const AddMemberFormSchema = v.object({
+  username: v.pipe(v.string(), v.trim(), v.nonEmpty()),
+});
 
 const project = new Hono<AppEnv>();
 
@@ -38,6 +46,7 @@ project.get("/:id", async (c) => {
   const [membership] = await sql`
     SELECT 1 FROM project_members
     WHERE project_id = ${projectId} AND user_id = ${user.id}
+    AND encrypted_project_key IS NOT NULL
   `;
 
   if (!membership) {
@@ -55,7 +64,8 @@ project.get("/:id", async (c) => {
   const isOwner = projectRow.created_by === user.id;
 
   const members = await sql`
-    SELECT u.github_login, u.github_name
+    SELECT u.github_login, u.github_name,
+           (pm.encrypted_project_key IS NULL) AS pending
     FROM project_members pm
     JOIN users u ON u.id = pm.user_id
     WHERE pm.project_id = ${projectId}
@@ -69,8 +79,7 @@ project.get("/:id", async (c) => {
     ORDER BY name, id DESC
   `;
 
-  const flash = c.req.query("flash");
-  const error = c.req.query("error");
+  const { flash, error } = consumeFlash(c);
 
   return c.html(
     <Layout user={user} origin={origin} title={`${projectRow.name} — env-share`}>
@@ -113,6 +122,11 @@ project.get("/:id", async (c) => {
                   {member.github_name && (
                     <span class="text-sm text-muted-foreground">{member.github_name}</span>
                   )}
+                  {member.pending ? (
+                    <span class="badge-outline">Pending</span>
+                  ) : (
+                    <span class="badge-secondary">Active</span>
+                  )}
                 </div>
                 {isOwner && member.github_login !== user.github_login && (
                   <form
@@ -128,6 +142,22 @@ project.get("/:id", async (c) => {
               </li>
             ))}
           </ul>
+          {isOwner && (
+            <form
+              method="post"
+              action={`/web/projects/${projectId}/members/add`}
+              class="flex items-center gap-x-2 mt-3"
+            >
+              <input
+                type="text"
+                name="username"
+                class="input flex-1"
+                placeholder="GitHub username"
+                required
+              />
+              <button type="submit" class="btn btn-sm">Add</button>
+            </form>
+          )}
         </div>
 
         {/* Files */}
@@ -169,26 +199,84 @@ project.get("/:id", async (c) => {
   );
 });
 
+project.post(
+  "/:id/members/add",
+  vValidator("form", AddMemberFormSchema, (result, c) => {
+    if (!result.success) {
+      const projectId = c.req.param("id");
+      setFlashError(c, "Username is required");
+      return c.redirect(`/web/projects/${projectId}`);
+    }
+  }),
+  async (c) => {
+    const user = c.get("user");
+    const projectId = c.req.param("id");
+    const redirectUrl = `/web/projects/${projectId}`;
+
+    const [ownerCheck] = await sql`
+      SELECT 1 FROM projects WHERE id = ${projectId} AND created_by = ${user.id}
+    `;
+
+    if (!ownerCheck) {
+      setFlashError(c, "Not the owner");
+      return c.redirect(redirectUrl);
+    }
+
+    const { username } = c.req.valid("form");
+
+    const [existing] = await sql`
+      SELECT 1 FROM project_members pm
+      JOIN users u ON u.id = pm.user_id
+      WHERE pm.project_id = ${projectId} AND u.github_login = ${username}
+    `;
+
+    if (existing) {
+      setFlashError(c, `${username} is already a member`);
+      return c.redirect(redirectUrl);
+    }
+
+    let targetUser = await findUserByLogin(username);
+
+    if (!targetUser) {
+      const ghUser = await fetchGitHubUserByLogin(username);
+      if (!ghUser) {
+        setFlashError(c, "GitHub user not found");
+        return c.redirect(redirectUrl);
+      }
+      targetUser = await upsertUser(ghUser);
+    }
+
+    await upsertMember(projectId, targetUser.id, null);
+
+    setFlash(c, `Added ${username} as a pending member`);
+    return c.redirect(redirectUrl);
+  }
+);
+
 project.post("/:id/members/:username/remove", async (c) => {
   const user = c.get("user");
   const projectId = c.req.param("id");
   const username = c.req.param("username");
+  const redirectUrl = `/web/projects/${projectId}`;
 
   const [ownerCheck] = await sql`
     SELECT 1 FROM projects WHERE id = ${projectId} AND created_by = ${user.id}
   `;
 
   if (!ownerCheck) {
-    return c.redirect(`/web/projects/${projectId}?error=Not+the+owner`);
+    setFlashError(c, "Not the owner");
+    return c.redirect(redirectUrl);
   }
 
   if (username === user.github_login) {
-    return c.redirect(`/web/projects/${projectId}?error=Cannot+remove+yourself`);
+    setFlashError(c, "Cannot remove yourself");
+    return c.redirect(redirectUrl);
   }
 
   const targetUser = await findUserByLogin(username);
   if (!targetUser) {
-    return c.redirect(`/web/projects/${projectId}?error=User+not+found`);
+    setFlashError(c, "User not found");
+    return c.redirect(redirectUrl);
   }
 
   await sql`
@@ -196,9 +284,8 @@ project.post("/:id/members/:username/remove", async (c) => {
     WHERE project_id = ${projectId} AND user_id = ${targetUser.id}
   `;
 
-  return c.redirect(
-    `/web/projects/${projectId}?flash=Removed+${username}+from+project`
-  );
+  setFlash(c, `Removed ${username} from project`);
+  return c.redirect(redirectUrl);
 });
 
 export { project };
