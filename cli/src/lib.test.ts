@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { getServerHost } from "./lib.js";
 
 describe("getServerHost", () => {
@@ -11,8 +11,6 @@ describe("getServerHost", () => {
   });
 
   it("sanitizes special characters to filesystem-safe string", () => {
-    expect(getServerHost("https://example.com:8080")).toMatch(
-      /^[a-zA-Z0-9._-]+$/,
-    );
+    expect(getServerHost("https://example.com:8080")).toMatch(/^[a-zA-Z0-9._-]+$/);
   });
 });

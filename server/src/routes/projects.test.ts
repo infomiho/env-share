@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../db.js", () => ({ sql: vi.fn() }));
 
@@ -28,8 +28,8 @@ vi.mock("../middleware.js", async (importOriginal) => {
   return { ...original, ...createMockMiddleware() };
 });
 
-import * as repo from "../repositories.js";
 import * as gh from "../github.js";
+import * as repo from "../repositories.js";
 import { projects } from "./projects.js";
 
 function createApp() {
@@ -205,9 +205,7 @@ describe("GET /api/projects/:id/members", () => {
 
 describe("GET /api/projects/:id/pending-members", () => {
   it("returns pending members", async () => {
-    const pending = [
-      { user_id: 5, github_login: "newuser", public_key: "pk123" },
-    ];
+    const pending = [{ user_id: 5, github_login: "newuser", public_key: "pk123" }];
     vi.mocked(repo.listPendingMembers).mockResolvedValue(pending as any);
     const app = createApp();
 
@@ -243,9 +241,7 @@ describe("GET /api/projects/:id/members/:username/public-key", () => {
     vi.mocked(repo.findUserByLogin).mockResolvedValue(null);
     const app = createApp();
 
-    const res = await app.request(
-      "/api/projects/p_1/members/ghost/public-key",
-    );
+    const res = await app.request("/api/projects/p_1/members/ghost/public-key");
     expect(res.status).toBe(404);
   });
 
@@ -256,9 +252,7 @@ describe("GET /api/projects/:id/members/:username/public-key", () => {
     });
     const app = createApp();
 
-    const res = await app.request(
-      "/api/projects/p_1/members/octocat/public-key",
-    );
+    const res = await app.request("/api/projects/p_1/members/octocat/public-key");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ publicKey: "pubkey123" });
   });

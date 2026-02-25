@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
 const FLASH_COOKIE = "_flash";
 const ERROR_COOKIE = "_flash_error";

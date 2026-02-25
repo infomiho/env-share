@@ -1,11 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  generateKeyPair,
-  eciesEncrypt,
-  eciesDecrypt,
-  aesEncrypt,
   aesDecrypt,
+  aesEncrypt,
   derivePublicKey,
+  eciesDecrypt,
+  eciesEncrypt,
+  generateKeyPair,
   generateProjectKey,
 } from "./crypto.js";
 

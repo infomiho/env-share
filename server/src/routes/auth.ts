@@ -1,8 +1,8 @@
-import { Hono } from "hono";
 import { vValidator } from "@hono/valibot-validator";
+import { Hono } from "hono";
 import { sql } from "../db.js";
+import { createSession, github, upsertUser } from "../github.js";
 import { type AppEnv, authMiddleware } from "../middleware.js";
-import { github, upsertUser, createSession } from "../github.js";
 import { DevicePollSchema, PublicKeySchema } from "../schemas.js";
 
 const auth = new Hono<AppEnv>();

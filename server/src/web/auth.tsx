@@ -1,15 +1,10 @@
 import { Hono } from "hono";
-import { setSignedCookie, deleteCookie } from "hono/cookie";
+import { deleteCookie, setSignedCookie } from "hono/cookie";
 import { sql } from "../db.js";
+import { createSession, github, SESSION_TTL_MS, upsertUser } from "../github.js";
 import type { AppEnv } from "../middleware.js";
-import {
-  SESSION_TTL_MS,
-  github,
-  upsertUser,
-  createSession,
-} from "../github.js";
-import { Layout } from "./layout.js";
 import { Terminal } from "./components.js";
+import { Layout } from "./layout.js";
 import { COOKIE_SECRET, webAuthMiddleware } from "./middleware.js";
 
 const webAuth = new Hono<AppEnv>();
@@ -17,7 +12,10 @@ const webAuth = new Hono<AppEnv>();
 webAuth.get("/login", (c) => {
   const origin = new URL(c.req.url).origin;
   return c.html(
-    <Layout origin={origin} description="End-to-end encrypted .env sharing with GitHub auth. The server never sees your secrets.">
+    <Layout
+      origin={origin}
+      description="End-to-end encrypted .env sharing with GitHub auth. The server never sees your secrets."
+    >
       <div class="min-h-[80vh] flex items-center">
         <div class="md:grid md:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
           {/* Hero */}
@@ -40,18 +38,17 @@ webAuth.get("/login", (c) => {
               ))}
             </ul>
 
-            <Terminal commands={[
-              "npx @infomiho/env-share login",
-              "npx @infomiho/env-share init",
-              "npx @infomiho/env-share push .env",
-              "npx @infomiho/env-share pull",
-            ]} />
+            <Terminal
+              commands={[
+                "npx @infomiho/env-share login",
+                "npx @infomiho/env-share init",
+                "npx @infomiho/env-share push .env",
+                "npx @infomiho/env-share pull",
+              ]}
+            />
 
             <div class="flex gap-4 mt-4 text-sm text-muted-foreground">
-              <a
-                href="https://github.com/infomiho/env-share"
-                class="hover:text-foreground"
-              >
+              <a href="https://github.com/infomiho/env-share" class="hover:text-foreground">
                 GitHub
               </a>
               <a
@@ -68,9 +65,7 @@ webAuth.get("/login", (c) => {
             <div class="card text-center max-w-[400px] w-full">
               <header>
                 <h2 class="h4">Sign in</h2>
-                <p class="text-muted-foreground">
-                  Sign in to manage your projects
-                </p>
+                <p class="text-muted-foreground">Sign in to manage your projects</p>
               </header>
               <section>
                 <a
@@ -93,7 +88,7 @@ webAuth.get("/login", (c) => {
           </div>
         </div>
       </div>
-    </Layout>
+    </Layout>,
   );
 });
 

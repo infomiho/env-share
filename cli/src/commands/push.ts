@@ -1,32 +1,38 @@
-import { Command } from 'commander'
-import fs from 'node:fs'
-import path from 'node:path'
-import { apiRequest, loadProjectConfig, unwrapProjectKey, resolvePendingMembers, createSpinner } from '../lib.js'
-import { aesEncrypt } from '../crypto.js'
+import fs from "node:fs";
+import path from "node:path";
+import { Command } from "commander";
+import { aesEncrypt } from "../crypto.js";
+import {
+  apiRequest,
+  createSpinner,
+  loadProjectConfig,
+  resolvePendingMembers,
+  unwrapProjectKey,
+} from "../lib.js";
 
-export const pushCommand = new Command('push')
-  .description('Encrypt and upload an env file')
-  .argument('[file]', 'File to push', '.env')
+export const pushCommand = new Command("push")
+  .description("Encrypt and upload an env file")
+  .argument("[file]", "File to push", ".env")
   .action(async (file: string) => {
-    const { projectId } = loadProjectConfig()
+    const { projectId } = loadProjectConfig();
 
-    const filePath = path.resolve(file)
+    const filePath = path.resolve(file);
     if (!fs.existsSync(filePath)) {
-      throw new Error(`File not found: ${filePath}`)
+      throw new Error(`File not found: ${filePath}`);
     }
 
-    const content = fs.readFileSync(filePath)
-    const projectKey = await unwrapProjectKey(projectId)
-    await resolvePendingMembers(projectId, projectKey)
-    const encryptedContent = aesEncrypt(content, projectKey)
-    const fileName = path.basename(file)
+    const content = fs.readFileSync(filePath);
+    const projectKey = await unwrapProjectKey(projectId);
+    await resolvePendingMembers(projectId, projectKey);
+    const encryptedContent = aesEncrypt(content, projectKey);
+    const fileName = path.basename(file);
 
-    const spinner = createSpinner(`Pushing ${fileName}`)
-    spinner.start()
+    const spinner = createSpinner(`Pushing ${fileName}`);
+    spinner.start();
 
-    await apiRequest('PUT', `/api/projects/${projectId}/files/${fileName}`, {
+    await apiRequest("PUT", `/api/projects/${projectId}/files/${fileName}`, {
       encryptedContent,
-    })
+    });
 
-    spinner.stop(`✓ Pushed ${fileName}.`)
-  })
+    spinner.stop(`✓ Pushed ${fileName}.`);
+  });

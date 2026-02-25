@@ -1,5 +1,15 @@
 {
   "name": "env-share",
   "private": true,
-  "workspaces": ["server", "cli"]
+  "workspaces": [
+    "server",
+    "cli"
+  ],
+  "scripts": {
+    "check": "biome check .",
+    "check:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4"
+  }
 }

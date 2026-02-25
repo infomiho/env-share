@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { sql } from "../db.js";
 import type { AppEnv } from "../middleware.js";
+import { formatDate } from "./format.js";
 import { Layout } from "./layout.js";
 import { webAuthMiddleware } from "./middleware.js";
-import { formatDate } from "./format.js";
 
 const dashboard = new Hono<AppEnv>();
 
@@ -37,13 +37,15 @@ dashboard.get("/", async (c) => {
         <ul>
           {projects.map((proj) => (
             <li class="flex items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
-              <a href={`/web/projects/${proj.id}`} class="font-medium">{proj.name}</a>
+              <a href={`/web/projects/${proj.id}`} class="font-medium">
+                {proj.name}
+              </a>
               <span class="ml-auto text-muted-foreground">{formatDate(proj.created_at)}</span>
             </li>
           ))}
         </ul>
       )}
-    </Layout>
+    </Layout>,
   );
 });
 

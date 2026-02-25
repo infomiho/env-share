@@ -1,29 +1,34 @@
-import { Hono } from "hono";
 import { vValidator } from "@hono/valibot-validator";
+import { Hono } from "hono";
 import { type AppEnv, authMiddleware, memberOnly } from "../middleware.js";
-import { UploadFileSchema } from "../schemas.js";
 import {
-  insertFile,
-  getLatestFile,
-  getFileHistory,
   deleteFile,
+  getFileHistory,
+  getLatestFile,
+  insertFile,
   listFiles,
 } from "../repositories.js";
+import { UploadFileSchema } from "../schemas.js";
 
 const files = new Hono<AppEnv>();
 
 files.use("/api/projects/:id/files/*", authMiddleware);
 files.use("/api/projects/:id/files", authMiddleware);
 
-files.put("/api/projects/:id/files/:name", memberOnly, vValidator("json", UploadFileSchema), async (c) => {
-  const projectId = c.req.param("id");
-  const name = c.req.param("name");
-  const { encryptedContent } = c.req.valid("json");
+files.put(
+  "/api/projects/:id/files/:name",
+  memberOnly,
+  vValidator("json", UploadFileSchema),
+  async (c) => {
+    const projectId = c.req.param("id");
+    const name = c.req.param("name");
+    const { encryptedContent } = c.req.valid("json");
 
-  await insertFile(projectId, name, encryptedContent);
+    await insertFile(projectId, name, encryptedContent);
 
-  return c.json({ ok: true });
-});
+    return c.json({ ok: true });
+  },
+);
 
 files.get("/api/projects/:id/files/:name/history", memberOnly, async (c) => {
   const projectId = c.req.param("id");

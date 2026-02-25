@@ -26,8 +26,7 @@ export async function findMemberKey(projectId: string, userId: number) {
 }
 
 export async function findUserByLogin(username: string) {
-  const [user] =
-    await sql`SELECT id, public_key FROM users WHERE github_login = ${username}`;
+  const [user] = await sql`SELECT id, public_key FROM users WHERE github_login = ${username}`;
   return user ?? null;
 }
 
@@ -87,11 +86,7 @@ export async function isOwner(projectId: string, userId: number) {
   return !!row;
 }
 
-export async function insertFile(
-  projectId: string,
-  name: string,
-  encryptedContent: string,
-) {
+export async function insertFile(projectId: string, name: string, encryptedContent: string) {
   await sql`INSERT INTO files (project_id, name, encrypted_content) VALUES (${projectId}, ${name}, ${encryptedContent})`;
 }
 

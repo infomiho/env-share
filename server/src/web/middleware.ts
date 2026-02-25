@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
 import { getSignedCookie } from "hono/cookie";
-import { type AppEnv, hashToken, findSessionUser } from "../middleware.js";
+import { type AppEnv, findSessionUser, hashToken } from "../middleware.js";
 
 if (!process.env.COOKIE_SECRET) {
   throw new Error("COOKIE_SECRET environment variable is required");

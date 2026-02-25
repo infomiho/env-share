@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Hono } from "hono";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../db.js", () => ({ sql: vi.fn() }));
 
@@ -44,11 +44,7 @@ describe("PUT /api/projects/:id/files/:name", () => {
     });
 
     expect(res.status).toBe(200);
-    expect(repo.insertFile).toHaveBeenCalledWith(
-      "p_1",
-      ".env",
-      "encrypted-data",
-    );
+    expect(repo.insertFile).toHaveBeenCalledWith("p_1", ".env", "encrypted-data");
   });
 });
 

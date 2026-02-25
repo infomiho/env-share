@@ -41,20 +41,15 @@ export function createGitHubClient(
   config: GitHubConfig,
   fetchFn: typeof fetch = fetch,
 ): GitHubClient {
-  async function requestToken(
-    body: Record<string, string>,
-  ): Promise<GitHubTokenResponse> {
-    const response = await fetchFn(
-      "https://github.com/login/oauth/access_token",
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ client_id: config.clientId, ...body }),
+  async function requestToken(body: Record<string, string>): Promise<GitHubTokenResponse> {
+    const response = await fetchFn("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({ client_id: config.clientId, ...body }),
+    });
     return response.json() as Promise<GitHubTokenResponse>;
   }
 
@@ -104,7 +99,7 @@ export async function upsertUser(ghUser: GitHubUser): Promise<User> {
 }
 
 export async function createSession(userId: number): Promise<string> {
-  const token = "ess_" + crypto.randomBytes(32).toString("hex");
+  const token = `ess_${crypto.randomBytes(32).toString("hex")}`;
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
   await sql`

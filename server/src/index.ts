@@ -1,13 +1,13 @@
-import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { Hono } from "hono";
 import { migrate } from "./db.js";
 import { auth } from "./routes/auth.js";
-import { projects } from "./routes/projects.js";
 import { files } from "./routes/files.js";
+import { projects } from "./routes/projects.js";
 import { webAuth } from "./web/auth.js";
 import { dashboard } from "./web/dashboard.js";
-import { project } from "./web/project.js";
 import { og } from "./web/og.js";
+import { project } from "./web/project.js";
 
 const app = new Hono();
 

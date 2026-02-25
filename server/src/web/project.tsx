@@ -1,15 +1,15 @@
-import { Hono } from "hono";
 import { vValidator } from "@hono/valibot-validator";
+import { Hono } from "hono";
 import * as v from "valibot";
 import { sql } from "../db.js";
-import { findUserByLogin, upsertMember } from "../repositories.js";
 import { fetchGitHubUserByLogin, upsertUser } from "../github.js";
 import type { AppEnv } from "../middleware.js";
-import { Layout } from "./layout.js";
+import { findUserByLogin, upsertMember } from "../repositories.js";
 import { Terminal } from "./components.js";
-import { webAuthMiddleware } from "./middleware.js";
+import { consumeFlash, setFlash, setFlashError } from "./flash.js";
 import { formatDate } from "./format.js";
-import { setFlash, setFlashError, consumeFlash } from "./flash.js";
+import { Layout } from "./layout.js";
+import { webAuthMiddleware } from "./middleware.js";
 
 const AddMemberFormSchema = v.object({
   username: v.pipe(v.string(), v.trim(), v.nonEmpty()),
@@ -39,7 +39,7 @@ project.get("/:id", async (c) => {
           <section>Project not found.</section>
         </div>
       </Layout>,
-      404
+      404,
     );
   }
 
@@ -57,7 +57,7 @@ project.get("/:id", async (c) => {
           <section>You are not a member of this project.</section>
         </div>
       </Layout>,
-      403
+      403,
     );
   }
 
@@ -155,7 +155,9 @@ project.get("/:id", async (c) => {
                 placeholder="GitHub username"
                 required
               />
-              <button type="submit" class="btn btn-sm">Add</button>
+              <button type="submit" class="btn btn-sm">
+                Add
+              </button>
             </form>
           )}
         </div>
@@ -186,16 +188,15 @@ project.get("/:id", async (c) => {
                 ))}
               </ul>
               <div class="mt-3">
-                <Terminal commands={[
-                  "npx @infomiho/env-share push .env",
-                  "npx @infomiho/env-share pull",
-                ]} />
+                <Terminal
+                  commands={["npx @infomiho/env-share push .env", "npx @infomiho/env-share pull"]}
+                />
               </div>
             </>
           )}
         </div>
       </div>
-    </Layout>
+    </Layout>,
   );
 });
 
@@ -250,7 +251,7 @@ project.post(
 
     setFlash(c, `Added ${username} as a pending member`);
     return c.redirect(redirectUrl);
-  }
+  },
 );
 
 project.post("/:id/members/:username/remove", async (c) => {
