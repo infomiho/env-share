@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0](https://github.com/infomiho/env-share/compare/env-share-v0.6.0...env-share-v0.7.0) (2026-02-25)
+
+
+### Features
+
+* add members provision-keys command and pending member UX ([7422119](https://github.com/infomiho/env-share/commit/7422119d4034b7881824999ca0131a5f08267bbf))
+* store server URL per project and support multi-server tokens ([d8d5449](https://github.com/infomiho/env-share/commit/d8d5449b3d7765944817ee6c92f32b32afd17dd7))
+
 ## [0.6.0](https://github.com/infomiho/env-share/compare/env-share-v0.5.0...env-share-v0.6.0) (2026-02-25)
 
 
