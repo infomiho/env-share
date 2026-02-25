@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.0](https://github.com/infomiho/env-share/compare/env-share-v0.5.0...env-share-v0.6.0) (2026-02-25)
+
+
+### Features
+
+* add unit tests with vitest and refactor server for testability ([3bc0840](https://github.com/infomiho/env-share/commit/3bc08401b6206e1390075c99e96974fbf06ec8cd))
+* set up Biome for linting and formatting across the monorepo ([2f28759](https://github.com/infomiho/env-share/commit/2f28759760668a6bb7ec4197672cb01a18794649))
+* support pending members for users who haven't logged in yet ([1d42541](https://github.com/infomiho/env-share/commit/1d42541c234d5d7713db1f04e9ec9b6994ca5b89))
+
 ## [0.5.0](https://github.com/infomiho/env-share/compare/env-share-v0.4.1...env-share-v0.5.0) (2026-02-25)
 
 
