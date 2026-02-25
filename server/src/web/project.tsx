@@ -77,7 +77,7 @@ project.get("/:id", async (c) => {
         </a>
       </div>
 
-      <h1 class="my-4">{projectRow.name}</h1>
+      <h1 class="h1 my-4">{projectRow.name}</h1>
       <p class="text-muted-foreground mb-6">
         Owned by <strong>{projectRow.owner_login}</strong>
       </p>
@@ -93,7 +93,7 @@ project.get("/:id", async (c) => {
         </div>
       )}
 
-      <h2 class="mb-3">Members</h2>
+      <h2 class="h2 mb-3">Members</h2>
       <table class="table mb-8">
         <thead>
           <tr>
@@ -127,11 +127,16 @@ project.get("/:id", async (c) => {
         </tbody>
       </table>
 
-      <h2 class="mb-3">Files</h2>
+      <h2 class="h2 mb-3">Files</h2>
       {files.length === 0 ? (
-        <div class="text-center py-12 text-muted-foreground">
-          <p>No files yet. Use <code>env-share push</code> to upload.</p>
-        </div>
+        <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
+          <div class="text-center max-w-sm">
+            <h2 class="h4">No files yet.</h2>
+            <p class="text-muted-foreground mt-1">
+              Use <code>env-share push</code> to upload encrypted files.
+            </p>
+          </div>
+        </section>
       ) : (
         <>
           <table class="table">

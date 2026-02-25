@@ -22,33 +22,25 @@ dashboard.get("/", async (c) => {
 
   return c.html(
     <Layout user={user}>
-      <h1 class="mt-6 mb-4">Projects</h1>
+      <h1 class="h1 mt-6 mb-4">Projects</h1>
       {projects.length === 0 ? (
-        <div class="text-center py-12 text-muted-foreground">
-          <p>No projects yet.</p>
-          <p class="mt-2">
-            Use the CLI to create a project: <code>env-share init</code>
-          </p>
-        </div>
+        <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
+          <div class="text-center max-w-sm">
+            <h2 class="h4">No projects yet.</h2>
+            <p class="text-muted-foreground mt-1">
+              Use the CLI to create a project: <code>env-share init</code>
+            </p>
+          </div>
+        </section>
       ) : (
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((proj) => (
-              <tr>
-                <td>
-                  <a href={`/web/projects/${proj.id}`}>{proj.name}</a>
-                </td>
-                <td>{formatDate(proj.created_at)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul>
+          {projects.map((proj) => (
+            <li class="flex items-center border border-b-0 last:border-b first:rounded-t-xl last:rounded-b-xl px-4 h-12 text-sm hover:bg-muted/50 transition-colors">
+              <a href={`/web/projects/${proj.id}`} class="font-medium">{proj.name}</a>
+              <span class="ml-auto text-muted-foreground">{formatDate(proj.created_at)}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </Layout>
   );

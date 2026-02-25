@@ -37,16 +37,16 @@ export function Layout({
               env-share
             </a>
             <div class="flex items-center gap-4">
-              <span>{user.github_login}</span>
+              <span class="text-muted-foreground">{user.github_login}</span>
               <form method="post" action="/web/logout">
-                <button class="btn btn-ghost" type="submit">
+                <button class="btn btn-sm btn-ghost" type="submit">
                   Logout
                 </button>
               </form>
             </div>
           </nav>
         )}
-        <div class="mx-auto max-w-[960px] p-4">{children}</div>
+        <div class="container max-w-screen-xl mx-auto p-8">{children}</div>
       </body>
     </html>
   );
