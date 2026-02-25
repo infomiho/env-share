@@ -1,6 +1,12 @@
 import { Command } from "commander";
 import { eciesEncrypt } from "../crypto.js";
-import { apiRequest, createSpinner, loadProjectConfig, unwrapProjectKey } from "../lib.js";
+import {
+  apiRequest,
+  createSpinner,
+  loadProjectConfig,
+  resolvePendingMembers,
+  unwrapProjectKey,
+} from "../lib.js";
 
 interface Member {
   github_login: string;
@@ -70,8 +76,27 @@ const listCommand = new Command("list").description("List project members").acti
   console.log(`\n${members.length} member${members.length === 1 ? "" : "s"}`);
 });
 
+const provisionKeysCommand = new Command("provision-keys")
+  .description("Provision keys for pending members")
+  .action(async () => {
+    const { projectId } = loadProjectConfig();
+    const projectKey = await unwrapProjectKey(projectId);
+
+    const spinner = createSpinner("Provisioning pending members");
+    spinner.start();
+
+    const count = await resolvePendingMembers(projectId, projectKey);
+
+    if (count > 0) {
+      spinner.stop(`✓ Provisioned ${count} pending member${count === 1 ? "" : "s"}.`);
+    } else {
+      spinner.stop("✓ No pending members to provision.");
+    }
+  });
+
 export const membersCommand = new Command("members").description("Manage project members");
 
 membersCommand.addCommand(addCommand);
 membersCommand.addCommand(removeCommand);
 membersCommand.addCommand(listCommand);
+membersCommand.addCommand(provisionKeysCommand);

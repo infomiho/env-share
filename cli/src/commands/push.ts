@@ -2,13 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Command } from "commander";
 import { aesEncrypt } from "../crypto.js";
-import {
-  apiRequest,
-  createSpinner,
-  loadProjectConfig,
-  resolvePendingMembers,
-  unwrapProjectKey,
-} from "../lib.js";
+import { apiRequest, createSpinner, loadProjectConfig, unwrapProjectKey } from "../lib.js";
 
 export const pushCommand = new Command("push")
   .description("Encrypt and upload an env file")
@@ -23,7 +17,6 @@ export const pushCommand = new Command("push")
 
     const content = fs.readFileSync(filePath);
     const projectKey = await unwrapProjectKey(projectId);
-    await resolvePendingMembers(projectId, projectKey);
     const encryptedContent = aesEncrypt(content, projectKey);
     const fileName = path.basename(file);
 

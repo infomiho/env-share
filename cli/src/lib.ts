@@ -134,12 +134,15 @@ interface PendingMember {
   public_key: string;
 }
 
-export async function resolvePendingMembers(projectId: string, projectKey: Buffer): Promise<void> {
+export async function resolvePendingMembers(
+  projectId: string,
+  projectKey: Buffer,
+): Promise<number> {
   const pending = await apiRequest<PendingMember[]>(
     "GET",
     `/api/projects/${projectId}/pending-members`,
   );
-  if (pending.length === 0) return;
+  if (pending.length === 0) return 0;
 
   const members = pending.map((m) => ({
     username: m.github_login,
@@ -151,9 +154,7 @@ export async function resolvePendingMembers(projectId: string, projectKey: Buffe
     `/api/projects/${projectId}/resolve-pending`,
     { members },
   );
-  if (resolved > 0) {
-    console.log(`Provisioned keys for ${resolved} pending member${resolved === 1 ? "" : "s"}.`);
-  }
+  return resolved;
 }
 
 export async function unwrapProjectKey(projectId: string): Promise<Buffer> {

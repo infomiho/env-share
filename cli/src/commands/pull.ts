@@ -2,13 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { Command } from "commander";
 import { aesDecrypt } from "../crypto.js";
-import {
-  apiRequest,
-  createSpinner,
-  loadProjectConfig,
-  resolvePendingMembers,
-  unwrapProjectKey,
-} from "../lib.js";
+import { apiRequest, createSpinner, loadProjectConfig, unwrapProjectKey } from "../lib.js";
 
 export const pullCommand = new Command("pull")
   .description("Download and decrypt an env file")
@@ -16,8 +10,6 @@ export const pullCommand = new Command("pull")
   .action(async (file: string) => {
     const { projectId } = loadProjectConfig();
     const projectKey = await unwrapProjectKey(projectId);
-    await resolvePendingMembers(projectId, projectKey);
-
     const fileName = path.basename(file);
 
     const spinner = createSpinner(`Pulling ${fileName}`);

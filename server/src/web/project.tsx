@@ -5,7 +5,7 @@ import { sql } from "../db.js";
 import { fetchGitHubUserByLogin, upsertUser } from "../github.js";
 import type { AppEnv } from "../middleware.js";
 import { findUserByLogin, upsertMember } from "../repositories.js";
-import { Terminal } from "./components.js";
+import { InlineCode, Terminal } from "./components.js";
 import { consumeFlash, setFlash, setFlashError } from "./flash.js";
 import { formatDate } from "./format.js";
 import { Layout } from "./layout.js";
@@ -44,9 +44,8 @@ project.get("/:id", async (c) => {
   }
 
   const [membership] = await sql`
-    SELECT 1 FROM project_members
+    SELECT encrypted_project_key FROM project_members
     WHERE project_id = ${projectId} AND user_id = ${user.id}
-    AND encrypted_project_key IS NOT NULL
   `;
 
   if (!membership) {
@@ -60,6 +59,8 @@ project.get("/:id", async (c) => {
       403,
     );
   }
+
+  const isPending = membership.encrypted_project_key === null;
 
   const isOwner = projectRow.created_by === user.id;
 
@@ -134,6 +135,44 @@ project.get("/:id", async (c) => {
               <line x1="12" x2="12.01" y1="16" y2="16" />
             </svg>
             <section>{error}</section>
+          </div>
+        )}
+
+        {isPending && (
+          <div class="alert">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+              <path d="M12 9v4" />
+              <path d="M12 17h.01" />
+            </svg>
+            <section>
+              <p>
+                {user.public_key ? (
+                  <>
+                    Ask a project member to run{" "}
+                    <InlineCode>npx @infomiho/env-share members provision-keys</InlineCode> in the
+                    project directory to grant you access.
+                  </>
+                ) : (
+                  <>
+                    Run <InlineCode>npx @infomiho/env-share login</InlineCode> to set up your keys,
+                    then ask a project member to run{" "}
+                    <InlineCode>npx @infomiho/env-share members provision-keys</InlineCode> in the
+                    project directory.
+                  </>
+                )}
+              </p>
+            </section>
           </div>
         )}
 
