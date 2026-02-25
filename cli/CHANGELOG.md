@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/infomiho/env-share/compare/env-share-v0.4.1...env-share-v0.5.0) (2026-02-25)
+
+
+### Features
+
+* refactor middleware to proper Hono handlers and extract Terminal component ([767e022](https://github.com/infomiho/env-share/commit/767e022615096043703fc299a74aaa442047462b))
+
 ## [0.4.1](https://github.com/infomiho/env-share/compare/env-share-v0.4.0...env-share-v0.4.1) (2026-02-24)
 
 
