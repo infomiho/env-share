@@ -1,6 +1,6 @@
 {
   "name": "@infomiho/env-share",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "CLI for env-share — self-hosted encrypted .env sharing",
   "repository": {
     "type": "git",
