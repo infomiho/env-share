@@ -66,7 +66,7 @@ export async function fetchGitHubUser(accessToken: string): Promise<GitHubUser> 
 export async function upsertUser(ghUser: GitHubUser): Promise<User> {
   const [user] = await sql`
     INSERT INTO users (github_id, github_login, github_name)
-    VALUES (${ghUser.id}, ${ghUser.login}, ${ghUser.name})
+    VALUES (${ghUser.id}, ${ghUser.login}, ${ghUser.name ?? null})
     ON CONFLICT (github_id) DO UPDATE SET
       github_login = EXCLUDED.github_login,
       github_name = EXCLUDED.github_name
