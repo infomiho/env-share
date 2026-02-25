@@ -71,95 +71,94 @@ project.get("/:id", async (c) => {
 
   return c.html(
     <Layout user={user}>
-      <div class="mt-6">
-        <a href="/web" class="text-muted-foreground no-underline">
-          &larr; Projects
-        </a>
-      </div>
-
-      <h1 class="h1 my-4">{projectRow.name}</h1>
-      <p class="text-muted-foreground mb-6">
-        Owned by <strong>{projectRow.owner_login}</strong>
-      </p>
-
-      {flash && (
-        <div class="alert mb-4">
-          <section>{flash}</section>
+      <div class="mt-6 space-y-8">
+        <div>
+          <a href="/web" class="btn btn-sm btn-ghost inline-flex items-center gap-1 no-underline">
+            &larr; Projects
+          </a>
         </div>
-      )}
-      {error && (
-        <div class="alert alert-destructive mb-4">
-          <section>{error}</section>
-        </div>
-      )}
 
-      <h2 class="h2 mb-3">Members</h2>
-      <table class="table mb-8">
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Name</th>
-            {isOwner && <th class="w-[1%]" />}
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((member) => (
-            <tr>
-              <td>{member.github_login}</td>
-              <td>{member.github_name || "—"}</td>
-              {isOwner && (
-                <td>
-                  {member.github_login !== user.github_login && (
-                    <form
-                      method="post"
-                      action={`/web/projects/${projectId}/members/${member.github_login}/remove`}
-                      onsubmit="return confirm('Remove this member?')"
-                    >
-                      <button class="btn btn-destructive" type="submit">
-                        Remove
-                      </button>
-                    </form>
-                  )}
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h2 class="h2 mb-3">Files</h2>
-      {files.length === 0 ? (
-        <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
-          <div class="text-center max-w-sm">
-            <h2 class="h4">No files yet.</h2>
-            <p class="text-muted-foreground mt-1">
-              Use <code>env-share push</code> to upload encrypted files.
-            </p>
-          </div>
-        </section>
-      ) : (
-        <>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Filename</th>
-                <th>Last Updated</th>
-              </tr>
-            </thead>
-            <tbody>
-              {files.map((file) => (
-                <tr>
-                  <td>{file.name}</td>
-                  <td>{formatDate(file.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p class="mt-3 text-muted-foreground text-sm">
-            Files are end-to-end encrypted. Use the CLI to push and pull.
+        <div>
+          <h1 class="h1">{projectRow.name}</h1>
+          <p class="text-muted-foreground mt-1">
+            Owned by <strong>{projectRow.owner_login}</strong>
           </p>
-        </>
-      )}
+        </div>
+
+        {flash && (
+          <div class="alert">
+            <section>{flash}</section>
+          </div>
+        )}
+        {error && (
+          <div class="alert alert-destructive">
+            <section>{error}</section>
+          </div>
+        )}
+
+        {/* Members */}
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="h4">Members</h2>
+            <span class="text-sm text-muted-foreground">({members.length})</span>
+          </div>
+          <ul class="border rounded-xl divide-y">
+            {members.map((member) => (
+              <li class="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors">
+                <div class="flex items-center gap-3">
+                  <span class="font-medium">{member.github_login}</span>
+                  {member.github_name && (
+                    <span class="text-sm text-muted-foreground">{member.github_name}</span>
+                  )}
+                </div>
+                {isOwner && member.github_login !== user.github_login && (
+                  <form
+                    method="post"
+                    action={`/web/projects/${projectId}/members/${member.github_login}/remove`}
+                    onsubmit="return confirm('Remove this member?')"
+                  >
+                    <button class="btn btn-sm btn-destructive" type="submit">
+                      Remove
+                    </button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Files */}
+        <div>
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="h4">Files</h2>
+            <span class="text-sm text-muted-foreground">({files.length})</span>
+          </div>
+          {files.length === 0 ? (
+            <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">
+              <div class="text-center max-w-sm">
+                <h2 class="h4">No files yet.</h2>
+                <p class="text-muted-foreground mt-1">
+                  Use <code>env-share push</code> to upload encrypted files.
+                </p>
+              </div>
+            </section>
+          ) : (
+            <>
+              <ul class="border rounded-xl divide-y">
+                {files.map((file) => (
+                  <li class="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors">
+                    <span class="font-medium font-mono text-sm">{file.name}</span>
+                    <span class="text-sm text-muted-foreground">{formatDate(file.created_at)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p class="mt-3 text-muted-foreground text-sm">
+                Files are end-to-end encrypted. Use the CLI to push and pull.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
     </Layout>
   );
 });
