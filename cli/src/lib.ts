@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { eciesDecrypt, loadPrivateKey } from './crypto.js'
+import { eciesDecrypt, eciesEncrypt, loadPrivateKey } from './crypto.js'
 
 const CONFIG_DIR = path.join(os.homedir(), '.env-share')
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json')
@@ -123,6 +123,26 @@ export function createSpinner(message: string): { start: () => void; stop: (fina
         console.log(finalMessage)
       }
     },
+  }
+}
+
+interface PendingMember {
+  github_login: string
+  public_key: string
+}
+
+export async function resolvePendingMembers(projectId: string, projectKey: Buffer): Promise<void> {
+  const pending = await apiRequest<PendingMember[]>('GET', `/api/projects/${projectId}/pending-members`)
+  if (pending.length === 0) return
+
+  const members = pending.map((m) => ({
+    username: m.github_login,
+    encryptedProjectKey: eciesEncrypt(projectKey, Buffer.from(m.public_key, 'base64')),
+  }))
+
+  const { resolved } = await apiRequest<{ resolved: number }>('POST', `/api/projects/${projectId}/resolve-pending`, { members })
+  if (resolved > 0) {
+    console.log(`Provisioned keys for ${resolved} pending member${resolved === 1 ? '' : 's'}.`)
   }
 }
 

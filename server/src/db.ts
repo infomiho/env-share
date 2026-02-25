@@ -40,6 +40,10 @@ export async function migrate() {
   `;
 
   await sql`
+    ALTER TABLE project_members ALTER COLUMN encrypted_project_key DROP NOT NULL
+  `.catch(() => {});
+
+  await sql`
     CREATE TABLE IF NOT EXISTS files (
       id serial PRIMARY KEY,
       project_id text REFERENCES projects(id),

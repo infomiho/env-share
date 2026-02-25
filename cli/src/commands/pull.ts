@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import fs from 'node:fs'
 import path from 'node:path'
-import { apiRequest, loadProjectConfig, unwrapProjectKey, createSpinner } from '../lib.js'
+import { apiRequest, loadProjectConfig, unwrapProjectKey, resolvePendingMembers, createSpinner } from '../lib.js'
 import { aesDecrypt } from '../crypto.js'
 
 export const pullCommand = new Command('pull')
@@ -10,6 +10,7 @@ export const pullCommand = new Command('pull')
   .action(async (file: string) => {
     const { projectId } = loadProjectConfig()
     const projectKey = await unwrapProjectKey(projectId)
+    await resolvePendingMembers(projectId, projectKey)
 
     const fileName = path.basename(file)
 

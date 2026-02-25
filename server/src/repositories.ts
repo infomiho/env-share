@@ -34,7 +34,7 @@ export async function findUserByLogin(username: string) {
 export async function upsertMember(
   projectId: string,
   userId: number,
-  encryptedProjectKey: string,
+  encryptedProjectKey: string | null,
 ) {
   await sql`
     INSERT INTO project_members (project_id, user_id, encrypted_project_key)
@@ -49,15 +49,36 @@ export async function removeMember(projectId: string, userId: number) {
 
 export async function listMembers(projectId: string) {
   return sql`
-    SELECT u.github_login, u.github_name
+    SELECT u.github_login, u.github_name,
+           (pm.encrypted_project_key IS NULL) AS pending
     FROM project_members pm JOIN users u ON u.id = pm.user_id
     WHERE pm.project_id = ${projectId}`;
 }
 
 export async function isMember(projectId: string, userId: number) {
   const [row] =
-    await sql`SELECT 1 FROM project_members WHERE project_id = ${projectId} AND user_id = ${userId}`;
+    await sql`SELECT 1 FROM project_members WHERE project_id = ${projectId} AND user_id = ${userId} AND encrypted_project_key IS NOT NULL`;
   return !!row;
+}
+
+export async function listPendingMembers(projectId: string) {
+  return sql`
+    SELECT u.id AS user_id, u.github_login, u.public_key
+    FROM project_members pm JOIN users u ON u.id = pm.user_id
+    WHERE pm.project_id = ${projectId} AND pm.encrypted_project_key IS NULL AND u.public_key IS NOT NULL`;
+}
+
+export async function resolvePendingMembers(
+  projectId: string,
+  members: { userId: number; encryptedProjectKey: string }[],
+) {
+  await sql.begin(async (sql) => {
+    for (const { userId, encryptedProjectKey } of members) {
+      await sql`
+        UPDATE project_members SET encrypted_project_key = ${encryptedProjectKey}
+        WHERE project_id = ${projectId} AND user_id = ${userId} AND encrypted_project_key IS NULL`;
+    }
+  });
 }
 
 export async function isOwner(projectId: string, userId: number) {

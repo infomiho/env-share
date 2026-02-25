@@ -5,6 +5,7 @@ import {
   PublicKeySchema,
   CreateProjectSchema,
   AddMemberSchema,
+  ResolvePendingSchema,
   UploadFileSchema,
 } from "./schemas.js";
 
@@ -47,11 +48,35 @@ describe("AddMemberSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts input without encryptedProjectKey", () => {
+    const result = v.safeParse(AddMemberSchema, { username: "octocat" });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects empty username", () => {
     const result = v.safeParse(AddMemberSchema, {
       username: "",
       encryptedProjectKey: "key",
     });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("ResolvePendingSchema", () => {
+  it("accepts valid input", () => {
+    const result = v.safeParse(ResolvePendingSchema, {
+      members: [{ username: "octocat", encryptedProjectKey: "key" }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts empty members array", () => {
+    const result = v.safeParse(ResolvePendingSchema, { members: [] });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects missing members", () => {
+    const result = v.safeParse(ResolvePendingSchema, {});
     expect(result.success).toBe(false);
   });
 });

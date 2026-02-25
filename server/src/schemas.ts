@@ -15,7 +15,16 @@ export const CreateProjectSchema = v.object({
 
 export const AddMemberSchema = v.object({
   username: v.pipe(v.string(), v.nonEmpty()),
-  encryptedProjectKey: v.string(),
+  encryptedProjectKey: v.optional(v.string()),
+});
+
+export const ResolvePendingSchema = v.object({
+  members: v.array(
+    v.object({
+      username: v.string(),
+      encryptedProjectKey: v.string(),
+    }),
+  ),
 });
 
 export const UploadFileSchema = v.object({

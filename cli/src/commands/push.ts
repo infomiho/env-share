@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import fs from 'node:fs'
 import path from 'node:path'
-import { apiRequest, loadProjectConfig, unwrapProjectKey, createSpinner } from '../lib.js'
+import { apiRequest, loadProjectConfig, unwrapProjectKey, resolvePendingMembers, createSpinner } from '../lib.js'
 import { aesEncrypt } from '../crypto.js'
 
 export const pushCommand = new Command('push')
@@ -17,6 +17,7 @@ export const pushCommand = new Command('push')
 
     const content = fs.readFileSync(filePath)
     const projectKey = await unwrapProjectKey(projectId)
+    await resolvePendingMembers(projectId, projectKey)
     const encryptedContent = aesEncrypt(content, projectKey)
     const fileName = path.basename(file)
 

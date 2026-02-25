@@ -5,6 +5,7 @@ import { eciesEncrypt } from '../crypto.js'
 interface Member {
   github_login: string
   github_name: string | null
+  pending: boolean
 }
 
 const addCommand = new Command('add')
@@ -12,24 +13,35 @@ const addCommand = new Command('add')
   .argument('<username>', 'GitHub username to add')
   .action(async (username: string) => {
     const { projectId } = loadProjectConfig()
-    const projectKey = await unwrapProjectKey(projectId)
 
-    const { publicKey } = await apiRequest<{ publicKey: string }>(
-      'GET',
-      `/api/projects/${projectId}/members/${username}/public-key`,
-    )
-
-    const encryptedProjectKey = eciesEncrypt(projectKey, Buffer.from(publicKey, 'base64'))
+    let encryptedProjectKey: string | undefined
+    try {
+      const { publicKey } = await apiRequest<{ publicKey: string | null }>(
+        'GET',
+        `/api/projects/${projectId}/members/${username}/public-key`,
+      )
+      if (publicKey) {
+        const projectKey = await unwrapProjectKey(projectId)
+        encryptedProjectKey = eciesEncrypt(projectKey, Buffer.from(publicKey, 'base64'))
+      }
+    } catch (err) {
+      if (!(err instanceof Error && err.message.includes('(404)'))) throw err
+    }
 
     const spinner = createSpinner(`Adding ${username}`)
     spinner.start()
 
-    await apiRequest('POST', `/api/projects/${projectId}/members`, {
-      username,
-      encryptedProjectKey,
-    })
+    const { pending } = await apiRequest<{ ok: boolean; pending: boolean }>(
+      'POST',
+      `/api/projects/${projectId}/members`,
+      { username, ...(encryptedProjectKey ? { encryptedProjectKey } : {}) },
+    )
 
-    spinner.stop(`✓ Added ${username} to the project.`)
+    if (pending) {
+      spinner.stop(`✓ Added ${username} as a pending member.`)
+    } else {
+      spinner.stop(`✓ Added ${username} to the project.`)
+    }
   })
 
 const removeCommand = new Command('remove')
@@ -54,7 +66,8 @@ const listCommand = new Command('list')
 
     for (const member of members) {
       const name = member.github_name ? ` (${member.github_name})` : ''
-      console.log(`${member.github_login}${name}`)
+      const tag = member.pending ? ' [pending]' : ''
+      console.log(`${member.github_login}${name}${tag}`)
     }
     console.log(`\n${members.length} member${members.length === 1 ? '' : 's'}`)
   })

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 vi.mock("./db.js", () => ({ sql: vi.fn() }));
 
-import { createGitHubClient } from "./github.js";
+import { createGitHubClient, fetchGitHubUserByLogin } from "./github.js";
 
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({
@@ -11,6 +11,24 @@ function mockFetch(body: unknown, status = 200) {
     status,
   });
 }
+
+describe("fetchGitHubUserByLogin", () => {
+  it("returns user on success", async () => {
+    const fetch = mockFetch({ id: 42, login: "octocat", name: "Octocat" });
+    const result = await fetchGitHubUserByLogin("octocat", fetch as any);
+    expect(result).toEqual({ id: 42, login: "octocat", name: "Octocat" });
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.github.com/users/octocat",
+      expect.objectContaining({ headers: expect.objectContaining({ Accept: "application/json" }) }),
+    );
+  });
+
+  it("returns null on 404", async () => {
+    const fetch = mockFetch({ message: "Not Found" }, 404);
+    const result = await fetchGitHubUserByLogin("ghost", fetch as any);
+    expect(result).toBeNull();
+  });
+});
 
 describe("createGitHubClient", () => {
   const config = { clientId: "test-id", clientSecret: "test-secret" };

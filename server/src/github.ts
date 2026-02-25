@@ -26,6 +26,17 @@ export interface GitHubClient {
   fetchUser(accessToken: string): Promise<GitHubUser>;
 }
 
+export async function fetchGitHubUserByLogin(
+  username: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<GitHubUser | null> {
+  const response = await fetchFn(`https://api.github.com/users/${username}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) return null;
+  return response.json() as Promise<GitHubUser>;
+}
+
 export function createGitHubClient(
   config: GitHubConfig,
   fetchFn: typeof fetch = fetch,

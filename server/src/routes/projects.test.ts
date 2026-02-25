@@ -11,9 +11,16 @@ vi.mock("../repositories.js", () => ({
   upsertMember: vi.fn(),
   removeMember: vi.fn(),
   listMembers: vi.fn(),
+  listPendingMembers: vi.fn(),
+  resolvePendingMembers: vi.fn(),
   isMember: vi.fn(),
   isOwner: vi.fn(),
 }));
+
+vi.mock("../github.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../github.js")>();
+  return { ...original, fetchGitHubUserByLogin: vi.fn(), upsertUser: vi.fn() };
+});
 
 vi.mock("../middleware.js", async (importOriginal) => {
   const { createMockMiddleware } = await import("../test-utils.js");
@@ -22,6 +29,7 @@ vi.mock("../middleware.js", async (importOriginal) => {
 });
 
 import * as repo from "../repositories.js";
+import * as gh from "../github.js";
 import { projects } from "./projects.js";
 
 function createApp() {
@@ -86,8 +94,9 @@ describe("POST /api/projects", () => {
 });
 
 describe("POST /api/projects/:id/members", () => {
-  it("returns 404 when user not found", async () => {
+  it("returns 404 when user not found on GitHub", async () => {
     vi.mocked(repo.findUserByLogin).mockResolvedValue(null);
+    vi.mocked(gh.fetchGitHubUserByLogin).mockResolvedValue(null);
     const app = createApp();
 
     const res = await app.request("/api/projects/p_1/members", {
@@ -118,6 +127,35 @@ describe("POST /api/projects/:id/members", () => {
 
     expect(res.status).toBe(200);
     expect(repo.upsertMember).toHaveBeenCalledWith("p_1", 2, "key");
+  });
+
+  it("adds pending member when user has no public key", async () => {
+    vi.mocked(repo.findUserByLogin).mockResolvedValue(null);
+    vi.mocked(gh.fetchGitHubUserByLogin).mockResolvedValue({
+      id: 999,
+      login: "newuser",
+      name: "New User",
+    });
+    vi.mocked(gh.upsertUser).mockResolvedValue({
+      id: 5,
+      github_id: 999,
+      github_login: "newuser",
+      github_name: "New User",
+      public_key: null,
+    });
+    vi.mocked(repo.upsertMember).mockResolvedValue(undefined);
+    const app = createApp();
+
+    const res = await app.request("/api/projects/p_1/members", {
+      method: "POST",
+      body: JSON.stringify({ username: "newuser" }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.pending).toBe(true);
+    expect(repo.upsertMember).toHaveBeenCalledWith("p_1", 5, null);
   });
 });
 
@@ -162,6 +200,41 @@ describe("GET /api/projects/:id/members", () => {
     const res = await app.request("/api/projects/p_1/members");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(members);
+  });
+});
+
+describe("GET /api/projects/:id/pending-members", () => {
+  it("returns pending members", async () => {
+    const pending = [
+      { user_id: 5, github_login: "newuser", public_key: "pk123" },
+    ];
+    vi.mocked(repo.listPendingMembers).mockResolvedValue(pending as any);
+    const app = createApp();
+
+    const res = await app.request("/api/projects/p_1/pending-members");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(pending);
+  });
+});
+
+describe("POST /api/projects/:id/resolve-pending", () => {
+  it("resolves pending members", async () => {
+    vi.mocked(repo.findUserByLogin).mockResolvedValue({ id: 5, public_key: "pk" });
+    vi.mocked(repo.resolvePendingMembers).mockResolvedValue(undefined);
+    const app = createApp();
+
+    const res = await app.request("/api/projects/p_1/resolve-pending", {
+      method: "POST",
+      body: JSON.stringify({
+        members: [{ username: "newuser", encryptedProjectKey: "wrapped-key" }],
+      }),
+      headers: new Headers({ "Content-Type": "application/json" }),
+    });
+
+    expect(res.status).toBe(200);
+    expect(repo.resolvePendingMembers).toHaveBeenCalledWith("p_1", [
+      { userId: 5, encryptedProjectKey: "wrapped-key" },
+    ]);
   });
 });
 
