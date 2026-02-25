@@ -60,7 +60,7 @@ export async function authMiddleware(c: Context<AppEnv>, next: Next) {
   await next();
 }
 
-export async function requireMember(c: Context<AppEnv>): Promise<boolean> {
+export async function memberOnly(c: Context<AppEnv>, next: Next) {
   const projectId = c.req.param("id");
   const user = c.get("user");
 
@@ -69,14 +69,11 @@ export async function requireMember(c: Context<AppEnv>): Promise<boolean> {
     WHERE project_id = ${projectId} AND user_id = ${user.id}
   `;
 
-  if (!membership) {
-    c.res = c.json({ error: "Not a member" }, 403);
-    return false;
-  }
-  return true;
+  if (!membership) return c.json({ error: "Not a member" }, 403);
+  await next();
 }
 
-export async function requireOwner(c: Context<AppEnv>): Promise<boolean> {
+export async function ownerOnly(c: Context<AppEnv>, next: Next) {
   const projectId = c.req.param("id");
   const user = c.get("user");
 
@@ -85,9 +82,6 @@ export async function requireOwner(c: Context<AppEnv>): Promise<boolean> {
     WHERE id = ${projectId} AND created_by = ${user.id}
   `;
 
-  if (!project) {
-    c.res = c.json({ error: "Not the owner" }, 403);
-    return false;
-  }
-  return true;
+  if (!project) return c.json({ error: "Not the owner" }, 403);
+  await next();
 }

@@ -2,7 +2,10 @@ import type { Context, Next } from "hono";
 import { getSignedCookie } from "hono/cookie";
 import { type AppEnv, hashToken, findSessionUser } from "../middleware.js";
 
-const COOKIE_SECRET = process.env.COOKIE_SECRET || "dev-secret";
+if (!process.env.COOKIE_SECRET) {
+  throw new Error("COOKIE_SECRET environment variable is required");
+}
+const COOKIE_SECRET = process.env.COOKIE_SECRET;
 
 export { COOKIE_SECRET };
 

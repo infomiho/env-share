@@ -63,13 +63,8 @@ export const loginCommand = new Command('login')
     const keypairSpinner = createSpinner('Uploading public key')
     keypairSpinner.start()
 
-    await fetch(`${serverUrl}/api/auth/public-key`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ publicKey: publicKey.toString('base64') }),
+    await apiRequest('PUT', '/api/auth/public-key', {
+      publicKey: publicKey.toString('base64'),
     })
 
     keypairSpinner.stop('✓ Public key uploaded.')

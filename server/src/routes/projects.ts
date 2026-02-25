@@ -5,8 +5,8 @@ import { sql, findUserByLogin } from "../db.js";
 import {
   type AppEnv,
   authMiddleware,
-  requireMember,
-  requireOwner,
+  memberOnly,
+  ownerOnly,
 } from "../middleware.js";
 import { CreateProjectSchema, AddMemberSchema } from "../schemas.js";
 
@@ -19,12 +19,12 @@ projects.post("/api/projects", vValidator("json", CreateProjectSchema), async (c
   const user = c.get("user");
   const id = "p_" + crypto.randomBytes(16).toString("hex");
 
-  await sql.begin(async (tx) => {
-    await tx`
+  await sql.begin(async (sql) => {
+    await sql`
       INSERT INTO projects (id, name, created_by)
       VALUES (${id}, ${name}, ${user.id})
     `;
-    await tx`
+    await sql`
       INSERT INTO project_members (project_id, user_id, encrypted_project_key)
       VALUES (${id}, ${user.id}, ${encryptedProjectKey})
     `;
@@ -33,9 +33,7 @@ projects.post("/api/projects", vValidator("json", CreateProjectSchema), async (c
   return c.json({ id, name });
 });
 
-projects.get("/api/projects/:id", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+projects.get("/api/projects/:id", memberOnly, async (c) => {
   const projectId = c.req.param("id");
   const [project] = await sql`SELECT * FROM projects WHERE id = ${projectId}`;
 
@@ -43,9 +41,7 @@ projects.get("/api/projects/:id", async (c) => {
   return c.json(project);
 });
 
-projects.get("/api/projects/:id/key", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+projects.get("/api/projects/:id/key", memberOnly, async (c) => {
   const projectId = c.req.param("id");
   const user = c.get("user");
 
@@ -57,9 +53,7 @@ projects.get("/api/projects/:id/key", async (c) => {
   return c.json({ encryptedProjectKey: member.encrypted_project_key });
 });
 
-projects.post("/api/projects/:id/members", vValidator("json", AddMemberSchema), async (c) => {
-  if (!(await requireOwner(c))) return c.res;
-
+projects.post("/api/projects/:id/members", ownerOnly, vValidator("json", AddMemberSchema), async (c) => {
   const projectId = c.req.param("id");
   const { username, encryptedProjectKey } = c.req.valid("json");
 
@@ -76,9 +70,7 @@ projects.post("/api/projects/:id/members", vValidator("json", AddMemberSchema), 
   return c.json({ ok: true });
 });
 
-projects.delete("/api/projects/:id/members/:username", async (c) => {
-  if (!(await requireOwner(c))) return c.res;
-
+projects.delete("/api/projects/:id/members/:username", ownerOnly, async (c) => {
   const projectId = c.req.param("id");
   const username = c.req.param("username");
 
@@ -93,9 +85,7 @@ projects.delete("/api/projects/:id/members/:username", async (c) => {
   return c.json({ ok: true });
 });
 
-projects.get("/api/projects/:id/members", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+projects.get("/api/projects/:id/members", memberOnly, async (c) => {
   const projectId = c.req.param("id");
 
   const members = await sql`
@@ -108,9 +98,7 @@ projects.get("/api/projects/:id/members", async (c) => {
   return c.json(members);
 });
 
-projects.get("/api/projects/:id/members/:username/public-key", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+projects.get("/api/projects/:id/members/:username/public-key", memberOnly, async (c) => {
   const username = c.req.param("username");
 
   const user = await findUserByLogin(username);

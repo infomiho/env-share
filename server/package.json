@@ -10,7 +10,7 @@
     "@hono/node-server": "^1",
     "@hono/valibot-validator": "^0.6.1",
     "hono": "^4",
-    "postgres": "^3",
+    "postgres": "3.4.7",
     "valibot": "^1.2.0"
   },
   "devDependencies": {

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { sql, findUserByLogin } from "../db.js";
 import type { AppEnv } from "../middleware.js";
 import { Layout } from "./layout.js";
+import { Terminal } from "./components.js";
 import { webAuthMiddleware } from "./middleware.js";
 import { formatDate } from "./format.js";
 
@@ -73,7 +74,7 @@ project.get("/:id", async (c) => {
     <Layout user={user}>
       <div class="mt-6 space-y-8">
         <div>
-          <a href="/web" class="btn btn-sm btn-ghost inline-flex items-center gap-1 no-underline">
+          <a href="/web" class="text-sm text-muted-foreground hover:text-foreground no-underline">
             &larr; Projects
           </a>
         </div>
@@ -152,9 +153,12 @@ project.get("/:id", async (c) => {
                   </li>
                 ))}
               </ul>
-              <p class="mt-3 text-muted-foreground text-sm">
-                Files are end-to-end encrypted. Use the CLI to push and pull.
-              </p>
+              <div class="mt-3">
+                <Terminal commands={[
+                  "npx @infomiho/env-share push .env",
+                  "npx @infomiho/env-share pull",
+                ]} />
+              </div>
             </>
           )}
         </div>

@@ -10,6 +10,7 @@ import {
   createSession,
 } from "../github.js";
 import { Layout } from "./layout.js";
+import { Terminal } from "./components.js";
 import { COOKIE_SECRET, webAuthMiddleware } from "./middleware.js";
 
 const webAuth = new Hono<AppEnv>();
@@ -39,14 +40,12 @@ webAuth.get("/login", (c) => {
               ))}
             </ul>
 
-            <div class="rounded-lg bg-zinc-950 text-zinc-300 p-4 font-mono text-sm leading-relaxed">
-              {["login", "init", "push .env", "pull"].map((cmd) => (
-                <div>
-                  <span class="text-zinc-500">$</span> npx @infomiho/env-share{" "}
-                  {cmd}
-                </div>
-              ))}
-            </div>
+            <Terminal commands={[
+              "npx @infomiho/env-share login",
+              "npx @infomiho/env-share init",
+              "npx @infomiho/env-share push .env",
+              "npx @infomiho/env-share pull",
+            ]} />
 
             <div class="flex gap-4 mt-4 text-sm text-muted-foreground">
               <a

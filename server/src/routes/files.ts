@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { vValidator } from "@hono/valibot-validator";
 import { sql } from "../db.js";
-import { type AppEnv, authMiddleware, requireMember } from "../middleware.js";
+import { type AppEnv, authMiddleware, memberOnly } from "../middleware.js";
 import { UploadFileSchema } from "../schemas.js";
 
 const files = new Hono<AppEnv>();
@@ -9,9 +9,7 @@ const files = new Hono<AppEnv>();
 files.use("/api/projects/:id/files/*", authMiddleware);
 files.use("/api/projects/:id/files", authMiddleware);
 
-files.put("/api/projects/:id/files/:name", vValidator("json", UploadFileSchema), async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+files.put("/api/projects/:id/files/:name", memberOnly, vValidator("json", UploadFileSchema), async (c) => {
   const projectId = c.req.param("id");
   const name = c.req.param("name");
   const { encryptedContent } = c.req.valid("json");
@@ -24,9 +22,7 @@ files.put("/api/projects/:id/files/:name", vValidator("json", UploadFileSchema),
   return c.json({ ok: true });
 });
 
-files.get("/api/projects/:id/files/:name/history", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+files.get("/api/projects/:id/files/:name/history", memberOnly, async (c) => {
   const projectId = c.req.param("id");
   const name = c.req.param("name");
 
@@ -39,9 +35,7 @@ files.get("/api/projects/:id/files/:name/history", async (c) => {
   return c.json(result);
 });
 
-files.get("/api/projects/:id/files/:name", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+files.get("/api/projects/:id/files/:name", memberOnly, async (c) => {
   const projectId = c.req.param("id");
   const name = c.req.param("name");
 
@@ -56,9 +50,7 @@ files.get("/api/projects/:id/files/:name", async (c) => {
   return c.json({ encryptedContent: file.encrypted_content });
 });
 
-files.delete("/api/projects/:id/files/:name", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+files.delete("/api/projects/:id/files/:name", memberOnly, async (c) => {
   const projectId = c.req.param("id");
   const name = c.req.param("name");
 
@@ -73,9 +65,7 @@ files.delete("/api/projects/:id/files/:name", async (c) => {
   return c.json({ ok: true });
 });
 
-files.get("/api/projects/:id/files", async (c) => {
-  if (!(await requireMember(c))) return c.res;
-
+files.get("/api/projects/:id/files", memberOnly, async (c) => {
   const projectId = c.req.param("id");
 
   const result = await sql`
