@@ -1,6 +1,7 @@
 import type { Context, Next } from "hono";
 import crypto from "node:crypto";
 import { sql } from "./db.js";
+import { isMember, isOwner } from "./repositories.js";
 
 export type User = {
   id: number;
@@ -64,12 +65,10 @@ export async function memberOnly(c: Context<AppEnv>, next: Next) {
   const projectId = c.req.param("id");
   const user = c.get("user");
 
-  const [membership] = await sql`
-    SELECT 1 FROM project_members
-    WHERE project_id = ${projectId} AND user_id = ${user.id}
-  `;
+  if (!(await isMember(projectId, user.id))) {
+    return c.json({ error: "Not a member" }, 403);
+  }
 
-  if (!membership) return c.json({ error: "Not a member" }, 403);
   await next();
 }
 
@@ -77,11 +76,9 @@ export async function ownerOnly(c: Context<AppEnv>, next: Next) {
   const projectId = c.req.param("id");
   const user = c.get("user");
 
-  const [project] = await sql`
-    SELECT 1 FROM projects
-    WHERE id = ${projectId} AND created_by = ${user.id}
-  `;
+  if (!(await isOwner(projectId, user.id))) {
+    return c.json({ error: "Not the owner" }, 403);
+  }
 
-  if (!project) return c.json({ error: "Not the owner" }, 403);
   await next();
 }

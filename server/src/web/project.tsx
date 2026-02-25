@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { sql, findUserByLogin } from "../db.js";
+import { sql } from "../db.js";
+import { findUserByLogin } from "../repositories.js";
 import type { AppEnv } from "../middleware.js";
 import { Layout } from "./layout.js";
 import { Terminal } from "./components.js";

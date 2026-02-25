@@ -4,58 +4,75 @@ import { hashToken, type User } from "./middleware.js";
 
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-interface GitHubTokenResponse {
+export interface GitHubTokenResponse {
   access_token?: string;
   error?: string;
 }
 
-interface GitHubUser {
+export interface GitHubUser {
   id: number;
   login: string;
   name: string | null;
 }
 
-async function requestGitHubToken(body: Record<string, string>): Promise<GitHubTokenResponse> {
-  const response = await fetch(
-    "https://github.com/login/oauth/access_token",
-    {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
+export interface GitHubConfig {
+  clientId: string;
+  clientSecret: string;
+}
+
+export interface GitHubClient {
+  exchangeDeviceCode(deviceCode: string): Promise<GitHubTokenResponse>;
+  exchangeOAuthCode(code: string): Promise<GitHubTokenResponse>;
+  fetchUser(accessToken: string): Promise<GitHubUser>;
+}
+
+export function createGitHubClient(
+  config: GitHubConfig,
+  fetchFn: typeof fetch = fetch,
+): GitHubClient {
+  async function requestToken(
+    body: Record<string, string>,
+  ): Promise<GitHubTokenResponse> {
+    const response = await fetchFn(
+      "https://github.com/login/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ client_id: config.clientId, ...body }),
       },
-      body: JSON.stringify({
-        client_id: process.env.GITHUB_CLIENT_ID,
-        ...body,
-      }),
-    }
-  );
-  return response.json();
-}
+    );
+    return response.json() as Promise<GitHubTokenResponse>;
+  }
 
-export function exchangeDeviceCode(deviceCode: string): Promise<GitHubTokenResponse> {
-  return requestGitHubToken({
-    device_code: deviceCode,
-    grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-  });
-}
-
-export function exchangeOAuthCode(code: string): Promise<GitHubTokenResponse> {
-  return requestGitHubToken({
-    client_secret: process.env.GITHUB_CLIENT_SECRET!,
-    code,
-  });
-}
-
-export async function fetchGitHubUser(accessToken: string): Promise<GitHubUser> {
-  const response = await fetch("https://api.github.com/user", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
+  return {
+    exchangeDeviceCode(deviceCode: string) {
+      return requestToken({
+        device_code: deviceCode,
+        grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+      });
     },
-  });
-  return response.json();
+    exchangeOAuthCode(code: string) {
+      return requestToken({ client_secret: config.clientSecret, code });
+    },
+    async fetchUser(accessToken: string): Promise<GitHubUser> {
+      const response = await fetchFn("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+        },
+      });
+      return response.json() as Promise<GitHubUser>;
+    },
+  };
 }
+
+export const github = createGitHubClient({
+  clientId: process.env.GITHUB_CLIENT_ID!,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+});
 
 export async function upsertUser(ghUser: GitHubUser): Promise<User> {
   const [user] = await sql`

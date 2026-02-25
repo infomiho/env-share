@@ -4,8 +4,7 @@ import { sql } from "../db.js";
 import type { AppEnv } from "../middleware.js";
 import {
   SESSION_TTL_MS,
-  exchangeOAuthCode,
-  fetchGitHubUser,
+  github,
   upsertUser,
   createSession,
 } from "../github.js";
@@ -104,12 +103,12 @@ webAuth.get("/callback", async (c) => {
     return c.redirect("/web/login");
   }
 
-  const tokenData = await exchangeOAuthCode(code);
+  const tokenData = await github.exchangeOAuthCode(code);
   if (tokenData.error || !tokenData.access_token) {
     return c.redirect("/web/login");
   }
 
-  const ghUser = await fetchGitHubUser(tokenData.access_token);
+  const ghUser = await github.fetchUser(tokenData.access_token);
   const user = await upsertUser(ghUser);
   const token = await createSession(user.id);
 

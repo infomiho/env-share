@@ -2,12 +2,7 @@ import { Hono } from "hono";
 import { vValidator } from "@hono/valibot-validator";
 import { sql } from "../db.js";
 import { type AppEnv, authMiddleware } from "../middleware.js";
-import {
-  exchangeDeviceCode,
-  fetchGitHubUser,
-  upsertUser,
-  createSession,
-} from "../github.js";
+import { github, upsertUser, createSession } from "../github.js";
 import { DevicePollSchema, PublicKeySchema } from "../schemas.js";
 
 const auth = new Hono<AppEnv>();
@@ -38,13 +33,13 @@ auth.post("/api/auth/device", async (c) => {
 auth.post("/api/auth/device/poll", vValidator("json", DevicePollSchema), async (c) => {
   const { device_code } = c.req.valid("json");
 
-  const tokenData = await exchangeDeviceCode(device_code);
+  const tokenData = await github.exchangeDeviceCode(device_code);
 
   if (tokenData.error || !tokenData.access_token) {
     return c.json({ error: tokenData.error }, 400);
   }
 
-  const ghUser = await fetchGitHubUser(tokenData.access_token);
+  const ghUser = await github.fetchUser(tokenData.access_token);
   const user = await upsertUser(ghUser);
   const token = await createSession(user.id);
 

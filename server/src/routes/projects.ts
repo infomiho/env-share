@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { vValidator } from "@hono/valibot-validator";
 import crypto from "node:crypto";
-import { sql, findUserByLogin } from "../db.js";
 import {
   type AppEnv,
   authMiddleware,
@@ -9,6 +8,15 @@ import {
   ownerOnly,
 } from "../middleware.js";
 import { CreateProjectSchema, AddMemberSchema } from "../schemas.js";
+import {
+  createProjectWithMember,
+  findProject,
+  findMemberKey,
+  findUserByLogin,
+  upsertMember,
+  removeMember,
+  listMembers,
+} from "../repositories.js";
 
 const projects = new Hono<AppEnv>();
 
@@ -19,23 +27,14 @@ projects.post("/api/projects", vValidator("json", CreateProjectSchema), async (c
   const user = c.get("user");
   const id = "p_" + crypto.randomBytes(16).toString("hex");
 
-  await sql.begin(async (sql) => {
-    await sql`
-      INSERT INTO projects (id, name, created_by)
-      VALUES (${id}, ${name}, ${user.id})
-    `;
-    await sql`
-      INSERT INTO project_members (project_id, user_id, encrypted_project_key)
-      VALUES (${id}, ${user.id}, ${encryptedProjectKey})
-    `;
-  });
+  await createProjectWithMember(id, name, user.id, encryptedProjectKey);
 
   return c.json({ id, name });
 });
 
 projects.get("/api/projects/:id", memberOnly, async (c) => {
   const projectId = c.req.param("id");
-  const [project] = await sql`SELECT * FROM projects WHERE id = ${projectId}`;
+  const project = await findProject(projectId);
 
   if (!project) return c.json({ error: "Not found" }, 404);
   return c.json(project);
@@ -45,12 +44,9 @@ projects.get("/api/projects/:id/key", memberOnly, async (c) => {
   const projectId = c.req.param("id");
   const user = c.get("user");
 
-  const [member] = await sql`
-    SELECT encrypted_project_key FROM project_members
-    WHERE project_id = ${projectId} AND user_id = ${user.id}
-  `;
+  const encryptedProjectKey = await findMemberKey(projectId, user.id);
 
-  return c.json({ encryptedProjectKey: member.encrypted_project_key });
+  return c.json({ encryptedProjectKey });
 });
 
 projects.post("/api/projects/:id/members", ownerOnly, vValidator("json", AddMemberSchema), async (c) => {
@@ -60,12 +56,7 @@ projects.post("/api/projects/:id/members", ownerOnly, vValidator("json", AddMemb
   const targetUser = await findUserByLogin(username);
   if (!targetUser) return c.json({ error: "User not found" }, 404);
 
-  await sql`
-    INSERT INTO project_members (project_id, user_id, encrypted_project_key)
-    VALUES (${projectId}, ${targetUser.id}, ${encryptedProjectKey})
-    ON CONFLICT (project_id, user_id) DO UPDATE SET
-      encrypted_project_key = EXCLUDED.encrypted_project_key
-  `;
+  await upsertMember(projectId, targetUser.id, encryptedProjectKey);
 
   return c.json({ ok: true });
 });
@@ -77,10 +68,7 @@ projects.delete("/api/projects/:id/members/:username", ownerOnly, async (c) => {
   const targetUser = await findUserByLogin(username);
   if (!targetUser) return c.json({ error: "User not found" }, 404);
 
-  await sql`
-    DELETE FROM project_members
-    WHERE project_id = ${projectId} AND user_id = ${targetUser.id}
-  `;
+  await removeMember(projectId, targetUser.id);
 
   return c.json({ ok: true });
 });
@@ -88,12 +76,7 @@ projects.delete("/api/projects/:id/members/:username", ownerOnly, async (c) => {
 projects.get("/api/projects/:id/members", memberOnly, async (c) => {
   const projectId = c.req.param("id");
 
-  const members = await sql`
-    SELECT u.github_login, u.github_name
-    FROM project_members pm
-    JOIN users u ON u.id = pm.user_id
-    WHERE pm.project_id = ${projectId}
-  `;
+  const members = await listMembers(projectId);
 
   return c.json(members);
 });

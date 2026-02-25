@@ -50,9 +50,4 @@ export async function migrate() {
   `;
 }
 
-export async function findUserByLogin(username: string) {
-  const [user] = await sql`SELECT id, public_key FROM users WHERE github_login = ${username}`;
-  return user ?? null;
-}
-
 export { sql };
