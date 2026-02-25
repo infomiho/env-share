@@ -20,8 +20,9 @@ dashboard.get("/", async (c) => {
     ORDER BY p.created_at DESC
   `;
 
+  const origin = new URL(c.req.url).origin;
   return c.html(
-    <Layout user={user}>
+    <Layout user={user} origin={origin} title="Projects — env-share">
       <h1 class="h1 mt-6 mb-4">Projects</h1>
       {projects.length === 0 ? (
         <section class="flex items-center justify-center min-h-60 bg-card text-card-foreground border shadow-sm rounded-xl p-4">

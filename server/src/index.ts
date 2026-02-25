@@ -7,6 +7,7 @@ import { files } from "./routes/files.js";
 import { webAuth } from "./web/auth.js";
 import { dashboard } from "./web/dashboard.js";
 import { project } from "./web/project.js";
+import { og } from "./web/og.js";
 
 const app = new Hono();
 
@@ -15,6 +16,7 @@ app.route("/", projects);
 app.route("/", files);
 
 app.route("/web", webAuth);
+app.route("/web", og);
 app.route("/web", dashboard);
 app.route("/web/projects", project);
 

@@ -16,8 +16,9 @@ import { COOKIE_SECRET, webAuthMiddleware } from "./middleware.js";
 const webAuth = new Hono<AppEnv>();
 
 webAuth.get("/login", (c) => {
+  const origin = new URL(c.req.url).origin;
   return c.html(
-    <Layout>
+    <Layout origin={origin} description="End-to-end encrypted .env sharing with GitHub auth. The server never sees your secrets.">
       <div class="min-h-[80vh] flex items-center">
         <div class="md:grid md:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
           {/* Hero */}

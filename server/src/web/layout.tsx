@@ -1,19 +1,37 @@
 import type { Child } from "hono/jsx";
 import type { User } from "../middleware.js";
 
+interface LayoutProps {
+  children: Child;
+  user?: User;
+  origin?: string;
+  title?: string;
+  description?: string;
+}
+
 export function Layout({
   children,
   user,
-}: {
-  children: Child;
-  user?: User;
-}) {
+  origin = "",
+  title = "env-share",
+  description = "Self-hosted encrypted .env sharing for teams",
+}: LayoutProps) {
+  const ogImage = `${origin}/web/og`;
   return (
     <html lang="en">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>env-share</title>
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={ogImage} />
         <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" />
         <link
           rel="stylesheet"

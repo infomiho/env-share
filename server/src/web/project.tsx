@@ -12,6 +12,7 @@ project.use("*", webAuthMiddleware);
 
 project.get("/:id", async (c) => {
   const user = c.get("user");
+  const origin = new URL(c.req.url).origin;
   const projectId = c.req.param("id");
 
   const [projectRow] = await sql`
@@ -23,7 +24,7 @@ project.get("/:id", async (c) => {
 
   if (!projectRow) {
     return c.html(
-      <Layout user={user}>
+      <Layout user={user} origin={origin}>
         <div class="alert alert-destructive mt-6">
           <h2>Not found</h2>
           <section>Project not found.</section>
@@ -40,7 +41,7 @@ project.get("/:id", async (c) => {
 
   if (!membership) {
     return c.html(
-      <Layout user={user}>
+      <Layout user={user} origin={origin}>
         <div class="alert alert-destructive mt-6">
           <h2>Access denied</h2>
           <section>You are not a member of this project.</section>
@@ -71,7 +72,7 @@ project.get("/:id", async (c) => {
   const error = c.req.query("error");
 
   return c.html(
-    <Layout user={user}>
+    <Layout user={user} origin={origin} title={`${projectRow.name} — env-share`}>
       <div class="mt-6 space-y-8">
         <div>
           <a href="/web" class="text-sm text-muted-foreground hover:text-foreground no-underline">
