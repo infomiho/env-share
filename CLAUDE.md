@@ -61,9 +61,9 @@ Link globally for development:
 npm link
 ```
 
-Commands: `login`, `logout`, `whoami`, `init`, `push`, `pull`, `members add/remove/list`
+Commands: `login --server`, `logout`, `whoami`, `init --server`, `push`, `pull`, `members add/remove/list`
 
-Config stored at `~/.env-share/config.json`. Private keys at `~/.env-share/keys/`. Per-project config in `.env-share.json`.
+Global config at `~/.env-share/config.json` stores auth tokens per server host. Private keys at `~/.env-share/keys/`. Per-project config in `.env-share.json` includes `projectId` and `serverUrl`.
 
 ## Encryption
 

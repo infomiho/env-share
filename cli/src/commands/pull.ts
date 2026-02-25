@@ -8,8 +8,8 @@ export const pullCommand = new Command("pull")
   .description("Download and decrypt an env file")
   .argument("[file]", "File to pull", ".env")
   .action(async (file: string) => {
-    const { projectId } = loadProjectConfig();
-    const projectKey = await unwrapProjectKey(projectId);
+    const { projectId, serverUrl } = loadProjectConfig();
+    const projectKey = await unwrapProjectKey(projectId, serverUrl);
     const fileName = path.basename(file);
 
     const spinner = createSpinner(`Pulling ${fileName}`);
@@ -18,6 +18,7 @@ export const pullCommand = new Command("pull")
     const { encryptedContent } = await apiRequest<{ encryptedContent: string }>(
       "GET",
       `/api/projects/${projectId}/files/${fileName}`,
+      { serverUrl },
     );
 
     const decrypted = aesDecrypt(encryptedContent, projectKey);

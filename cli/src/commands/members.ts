@@ -18,16 +18,17 @@ const addCommand = new Command("add")
   .description("Add a member to the project")
   .argument("<username>", "GitHub username to add")
   .action(async (username: string) => {
-    const { projectId } = loadProjectConfig();
+    const { projectId, serverUrl } = loadProjectConfig();
 
     let encryptedProjectKey: string | undefined;
     try {
       const { publicKey } = await apiRequest<{ publicKey: string | null }>(
         "GET",
         `/api/projects/${projectId}/members/${username}/public-key`,
+        { serverUrl },
       );
       if (publicKey) {
-        const projectKey = await unwrapProjectKey(projectId);
+        const projectKey = await unwrapProjectKey(projectId, serverUrl);
         encryptedProjectKey = eciesEncrypt(projectKey, Buffer.from(publicKey, "base64"));
       }
     } catch (err) {
@@ -40,7 +41,10 @@ const addCommand = new Command("add")
     const { pending } = await apiRequest<{ ok: boolean; pending: boolean }>(
       "POST",
       `/api/projects/${projectId}/members`,
-      { username, ...(encryptedProjectKey ? { encryptedProjectKey } : {}) },
+      {
+        body: { username, ...(encryptedProjectKey ? { encryptedProjectKey } : {}) },
+        serverUrl,
+      },
     );
 
     if (pending) {
@@ -54,19 +58,21 @@ const removeCommand = new Command("remove")
   .description("Remove a member from the project")
   .argument("<username>", "GitHub username to remove")
   .action(async (username: string) => {
-    const { projectId } = loadProjectConfig();
+    const { projectId, serverUrl } = loadProjectConfig();
 
     const spinner = createSpinner(`Removing ${username}`);
     spinner.start();
 
-    await apiRequest("DELETE", `/api/projects/${projectId}/members/${username}`);
+    await apiRequest("DELETE", `/api/projects/${projectId}/members/${username}`, { serverUrl });
 
     spinner.stop(`✓ Removed ${username} from the project.`);
   });
 
 const listCommand = new Command("list").description("List project members").action(async () => {
-  const { projectId } = loadProjectConfig();
-  const members = await apiRequest<Member[]>("GET", `/api/projects/${projectId}/members`);
+  const { projectId, serverUrl } = loadProjectConfig();
+  const members = await apiRequest<Member[]>("GET", `/api/projects/${projectId}/members`, {
+    serverUrl,
+  });
 
   for (const member of members) {
     const name = member.github_name ? ` (${member.github_name})` : "";
@@ -79,13 +85,13 @@ const listCommand = new Command("list").description("List project members").acti
 const provisionKeysCommand = new Command("provision-keys")
   .description("Provision keys for pending members")
   .action(async () => {
-    const { projectId } = loadProjectConfig();
-    const projectKey = await unwrapProjectKey(projectId);
+    const { projectId, serverUrl } = loadProjectConfig();
+    const projectKey = await unwrapProjectKey(projectId, serverUrl);
 
     const spinner = createSpinner("Provisioning pending members");
     spinner.start();
 
-    const count = await resolvePendingMembers(projectId, projectKey);
+    const count = await resolvePendingMembers(projectId, projectKey, serverUrl);
 
     if (count > 0) {
       spinner.stop(`✓ Provisioned ${count} pending member${count === 1 ? "" : "s"}.`);

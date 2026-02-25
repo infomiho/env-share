@@ -165,8 +165,8 @@ project.get("/:id", async (c) => {
                   </>
                 ) : (
                   <>
-                    Run <InlineCode>npx @infomiho/env-share login</InlineCode> to set up your keys,
-                    then ask a project member to run{" "}
+                    Run <InlineCode>npx @infomiho/env-share login --server {origin}</InlineCode> to
+                    set up your keys, then ask a project member to run{" "}
                     <InlineCode>npx @infomiho/env-share members provision-keys</InlineCode> in the
                     project directory.
                   </>

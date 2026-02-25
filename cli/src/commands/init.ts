@@ -1,12 +1,21 @@
 import path from "node:path";
 import { Command } from "commander";
 import { eciesEncrypt, generateProjectKey } from "../crypto.js";
-import { apiRequest, createSpinner, saveProjectConfig, type UserInfo } from "../lib.js";
+import {
+  apiRequest,
+  createSpinner,
+  normalizeServerUrl,
+  saveProjectConfig,
+  type UserInfo,
+} from "../lib.js";
 
 export const initCommand = new Command("init")
   .description("Initialize a new project in the current directory")
-  .action(async () => {
-    const me = await apiRequest<UserInfo>("GET", "/api/auth/me");
+  .requiredOption("--server <url>", "Server URL")
+  .action(async (opts) => {
+    const serverUrl = normalizeServerUrl(opts.server);
+
+    const me = await apiRequest<UserInfo>("GET", "/api/auth/me", { serverUrl });
     if (!me.public_key) {
       throw new Error("No public key on server. Run 'env-share login' again.");
     }
@@ -19,11 +28,11 @@ export const initCommand = new Command("init")
     spinner.start();
 
     const project = await apiRequest<{ id: string }>("POST", "/api/projects", {
-      name: projectName,
-      encryptedProjectKey,
+      body: { name: projectName, encryptedProjectKey },
+      serverUrl,
     });
 
-    saveProjectConfig({ projectId: project.id });
+    saveProjectConfig({ projectId: project.id, serverUrl });
 
     spinner.stop(`✓ Project "${projectName}" created (${project.id}).`);
   });

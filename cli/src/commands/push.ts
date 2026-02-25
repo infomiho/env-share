@@ -8,7 +8,7 @@ export const pushCommand = new Command("push")
   .description("Encrypt and upload an env file")
   .argument("[file]", "File to push", ".env")
   .action(async (file: string) => {
-    const { projectId } = loadProjectConfig();
+    const { projectId, serverUrl } = loadProjectConfig();
 
     const filePath = path.resolve(file);
     if (!fs.existsSync(filePath)) {
@@ -16,7 +16,7 @@ export const pushCommand = new Command("push")
     }
 
     const content = fs.readFileSync(filePath);
-    const projectKey = await unwrapProjectKey(projectId);
+    const projectKey = await unwrapProjectKey(projectId, serverUrl);
     const encryptedContent = aesEncrypt(content, projectKey);
     const fileName = path.basename(file);
 
@@ -24,7 +24,8 @@ export const pushCommand = new Command("push")
     spinner.start();
 
     await apiRequest("PUT", `/api/projects/${projectId}/files/${fileName}`, {
-      encryptedContent,
+      body: { encryptedContent },
+      serverUrl,
     });
 
     spinner.stop(`✓ Pushed ${fileName}.`);

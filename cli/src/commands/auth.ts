@@ -2,10 +2,13 @@ import { Command } from "commander";
 import { getOrCreatePublicKey } from "../crypto.js";
 import {
   apiRequest,
-  clearConfig,
   createSpinner,
   getServerHost,
-  saveConfig,
+  InvalidProjectConfigError,
+  loadProjectConfig,
+  normalizeServerUrl,
+  removeToken,
+  saveToken,
   type UserInfo,
 } from "../lib.js";
 
@@ -24,7 +27,7 @@ export const loginCommand = new Command("login")
   .description("Authenticate with a server via GitHub")
   .requiredOption("--server <url>", "Server URL")
   .action(async (opts) => {
-    const serverUrl = opts.server.replace(/\/+$/, "");
+    const serverUrl = normalizeServerUrl(opts.server);
     const serverHost = getServerHost(serverUrl);
 
     const deviceResponse = await fetch(`${serverUrl}/api/auth/device`, {
@@ -63,7 +66,7 @@ export const loginCommand = new Command("login")
     }
 
     pollSpinner.stop("✓ Logged in successfully.");
-    saveConfig({ serverUrl, token });
+    saveToken(serverUrl, token);
 
     const publicKey = getOrCreatePublicKey(serverHost);
 
@@ -71,25 +74,40 @@ export const loginCommand = new Command("login")
     keypairSpinner.start();
 
     await apiRequest("PUT", "/api/auth/public-key", {
-      publicKey: publicKey.toString("base64"),
+      body: { publicKey: publicKey.toString("base64") },
+      serverUrl,
     });
 
     keypairSpinner.stop("✓ Public key uploaded.");
   });
 
+function resolveServerUrl(opts: { server?: string }): string {
+  if (opts.server) return normalizeServerUrl(opts.server);
+  try {
+    return loadProjectConfig().serverUrl;
+  } catch (err) {
+    if (err instanceof InvalidProjectConfigError) throw err;
+    throw new Error("Run this from a project directory or use --server <url>.");
+  }
+}
+
 export const logoutCommand = new Command("logout")
   .description("Log out from the server")
-  .action(async () => {
+  .option("--server <url>", "Server URL")
+  .action(async (opts) => {
+    const serverUrl = resolveServerUrl(opts);
     try {
-      await apiRequest("POST", "/api/auth/logout");
+      await apiRequest("POST", "/api/auth/logout", { serverUrl });
     } catch {}
-    clearConfig();
+    removeToken(serverUrl);
     console.log("Logged out.");
   });
 
 export const whoamiCommand = new Command("whoami")
   .description("Show current user info")
-  .action(async () => {
-    const user = await apiRequest<UserInfo>("GET", "/api/auth/me");
+  .option("--server <url>", "Server URL")
+  .action(async (opts) => {
+    const serverUrl = resolveServerUrl(opts);
+    const user = await apiRequest<UserInfo>("GET", "/api/auth/me", { serverUrl });
     console.log(`Logged in as: ${user.github_login}`);
   });

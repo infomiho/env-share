@@ -29,7 +29,7 @@ dashboard.get("/", async (c) => {
           <div class="text-center max-w-sm">
             <h2 class="h4">No projects yet.</h2>
             <p class="text-muted-foreground mt-1">
-              Use the CLI to create a project: <code>env-share init</code>
+              Use the CLI to create a project: <code>env-share init --server {origin}</code>
             </p>
           </div>
         </section>

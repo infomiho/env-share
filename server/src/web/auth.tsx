@@ -40,8 +40,8 @@ webAuth.get("/login", (c) => {
 
             <Terminal
               commands={[
-                "npx @infomiho/env-share login",
-                "npx @infomiho/env-share init",
+                `npx @infomiho/env-share login --server ${origin}`,
+                `npx @infomiho/env-share init --server ${origin}`,
                 "npx @infomiho/env-share push .env",
                 "npx @infomiho/env-share pull",
               ]}

@@ -3,18 +3,26 @@ import os from "node:os";
 import path from "node:path";
 import { eciesDecrypt, eciesEncrypt, loadPrivateKey } from "./crypto.js";
 
-const CONFIG_DIR = path.join(os.homedir(), ".env-share");
-const CONFIG_PATH = path.join(CONFIG_DIR, "config.json");
+function getConfigDir() {
+  return path.join(os.homedir(), ".env-share");
+}
+
+function getConfigPath() {
+  return path.join(getConfigDir(), "config.json");
+}
+
 const PROJECT_CONFIG_NAME = ".env-share.json";
 
-export interface Config {
-  serverUrl: string;
-  token: string;
+interface MultiServerConfig {
+  servers: Record<string, { token: string }>;
 }
 
 export interface ProjectConfig {
   projectId: string;
+  serverUrl: string;
 }
+
+export class InvalidProjectConfigError extends Error {}
 
 export interface UserInfo {
   github_login: string;
@@ -23,22 +31,56 @@ export interface UserInfo {
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
-export function loadConfig(): Config {
-  if (!fs.existsSync(CONFIG_PATH)) {
-    throw new Error("Not logged in. Run 'env-share login' first.");
-  }
-  return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+interface ApiRequestOptions {
+  body?: unknown;
+  serverUrl?: string;
 }
 
-export function saveConfig(config: Config) {
-  fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), { mode: 0o600 });
+function loadGlobalConfig(): MultiServerConfig {
+  const configPath = getConfigPath();
+  if (!fs.existsSync(configPath)) {
+    return { servers: {} };
+  }
+  const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  if (!raw.servers) {
+    return { servers: {} };
+  }
+  return raw;
 }
 
-export function clearConfig() {
-  if (fs.existsSync(CONFIG_PATH)) {
-    fs.unlinkSync(CONFIG_PATH);
+function saveGlobalConfig(config: MultiServerConfig) {
+  fs.mkdirSync(getConfigDir(), { recursive: true });
+  fs.writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), { mode: 0o600 });
+}
+
+export function normalizeServerUrl(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
+export function loadToken(serverUrl: string): string {
+  const config = loadGlobalConfig();
+  const host = getServerHost(serverUrl);
+  const entry = config.servers[host];
+  if (!entry) {
+    throw new Error(
+      `Not logged in to ${serverUrl}. Run 'env-share login --server ${serverUrl}' first.`,
+    );
   }
+  return entry.token;
+}
+
+export function saveToken(serverUrl: string, token: string) {
+  const config = loadGlobalConfig();
+  const host = getServerHost(serverUrl);
+  config.servers[host] = { token };
+  saveGlobalConfig(config);
+}
+
+export function removeToken(serverUrl: string) {
+  const config = loadGlobalConfig();
+  const host = getServerHost(serverUrl);
+  delete config.servers[host];
+  saveGlobalConfig(config);
 }
 
 export function loadProjectConfig(): ProjectConfig {
@@ -46,7 +88,13 @@ export function loadProjectConfig(): ProjectConfig {
   if (!fs.existsSync(configPath)) {
     throw new Error("No project config found. Run 'env-share init' first.");
   }
-  return JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+  if (!raw.projectId || !raw.serverUrl) {
+    throw new InvalidProjectConfigError(
+      "Project config is missing serverUrl. Re-run 'env-share init --server <url>' to fix it.",
+    );
+  }
+  return raw;
 }
 
 export function saveProjectConfig(config: ProjectConfig) {
@@ -61,13 +109,15 @@ export function getServerHost(serverUrl: string): string {
 export async function apiRequest<T>(
   method: HttpMethod,
   urlPath: string,
-  body?: unknown,
+  options?: ApiRequestOptions,
 ): Promise<T> {
-  const config = loadConfig();
-  const url = `${config.serverUrl}${urlPath}`;
+  const { body, serverUrl } = options ?? {};
+  const resolvedServerUrl = serverUrl ?? loadProjectConfig().serverUrl;
+  const token = loadToken(resolvedServerUrl);
+  const url = `${resolvedServerUrl}${urlPath}`;
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${config.token}`,
+    Authorization: `Bearer ${token}`,
   };
 
   const init: RequestInit = { method, headers };
@@ -137,10 +187,12 @@ interface PendingMember {
 export async function resolvePendingMembers(
   projectId: string,
   projectKey: Buffer,
+  serverUrl: string,
 ): Promise<number> {
   const pending = await apiRequest<PendingMember[]>(
     "GET",
     `/api/projects/${projectId}/pending-members`,
+    { serverUrl },
   );
   if (pending.length === 0) return 0;
 
@@ -152,18 +204,18 @@ export async function resolvePendingMembers(
   const { resolved } = await apiRequest<{ resolved: number }>(
     "POST",
     `/api/projects/${projectId}/resolve-pending`,
-    { members },
+    { body: { members }, serverUrl },
   );
   return resolved;
 }
 
-export async function unwrapProjectKey(projectId: string): Promise<Buffer> {
-  const config = loadConfig();
-  const serverHost = getServerHost(config.serverUrl);
+export async function unwrapProjectKey(projectId: string, serverUrl: string): Promise<Buffer> {
+  const serverHost = getServerHost(serverUrl);
 
   const { encryptedProjectKey } = await apiRequest<{ encryptedProjectKey: string }>(
     "GET",
     `/api/projects/${projectId}/key`,
+    { serverUrl },
   );
 
   const privateKey = loadPrivateKey(serverHost);
